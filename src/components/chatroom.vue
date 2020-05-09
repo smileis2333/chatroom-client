@@ -12,7 +12,7 @@
 
                 <el-dropdown-menu slot="dropdown" class="dropItems">
                     <el-dropdown-item class="dropItem" @click.native="showProfile=true">Profile</el-dropdown-item>
-                    <el-dropdown-item class="dropItem" style="color: #ff6bac;" @click="logout">Logout</el-dropdown-item>
+                    <el-dropdown-item class="dropItem" style="color: #ff6bac;" @click.native="logout">Logout</el-dropdown-item>
                 </el-dropdown-menu>
             </el-dropdown>
 
@@ -28,12 +28,12 @@
                 </div>
                 <div class="user-list">
                     <div v-for="i in 6" :key="i">
-                        <div class="user">
+                        <div class="user" @click="switchChat(i)">
                             <el-avatar
                                     src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"></el-avatar>
                             <div class="username-and-message">
                                 <div class="username">Townsend Seary</div>
-                                <div class="message">What's up, how are you?</div>
+                                <div class="message-thumb">What's up, how are you?</div>
                             </div>
                             <div class="message-count-and-time">
                                 <div class="new-message-count">
@@ -45,7 +45,7 @@
                                 </div>
                             </div>
                         </div>
-                        <el-divider user-dived="" v-if="i!=10" style=""></el-divider>
+                        <el-divider :user-dived="selectChat==i?'select':'unselect'" v-if="i!=10"></el-divider>
                     </div>
                 </div>
             </el-aside>
@@ -116,15 +116,52 @@
                         </div>
                     </div>
                 </el-card>
-                <div class="message-area">
-                    <!--                    <div v-for="i in 100" :key="i">-->
-                    <!--                        12131-->
-                    <!--                    </div>-->
+                <div class="message-area" id="message-list">
+                    <div v-for="message in messages" :key="message.messageId" class="message-meta">
+                        <div v-if="message.ownerId==1" class="other-message">
+                            <el-avatar :src="message.avatar" class="avatar"></el-avatar>
+                            <div class="message">
+                                <div class="content">
+                                    {{message.content}}
+                                </div>
+                                <div class="post-time">
+                                    {{message.postTime}}
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="message.ownerId==2" class="mine-message">
+                            <div class="message">
+                                <div class="content">
+                                    {{message.content}}
+                                </div>
+                                <div class="post-time">
+                                    {{message.postTime}}
+                                </div>
+                            </div>
+                            <el-avatar :src="message.avatar" class="avatar"></el-avatar>
+                        </div>
+                    </div>
                 </div>
                 <div class="message-input-area">
                     <div class="message-input-line">
-                        <el-button><span class="iconfont"/>emoji</el-button>
-                        <el-input v-model="input" placeholder="Write a message"/>
+
+                        <TwemojiPicker
+                                :pickerWidth="600"
+                                :pickerHeight="200"
+                                :pickerCloseOnClickaway="true"
+                                :emojiData="emojiDataAll"
+                                :emojiGroups="emojiGroups"
+                                :skinsSelection="false"
+                                :searchEmojisFeat="true"
+                                searchEmojiPlaceholder="Search here."
+                                searchEmojiNotFound="Emojis not found."
+                                @emojiUnicodeAdded="emojiUnicodeAdded"
+                                @emojiImgAdded="emojiImgAdded"
+                                isLoadingLabel="Loading..."
+                        />
+
+                        <el-input v-model="inputMessage" placeholder="Write a message"/>
+
                         <el-upload
                                 class="upload-demo"
                                 action="https://jsonplaceholder.typicode.com/posts/"
@@ -149,7 +186,7 @@
                             FullName
                         </div>
                         <div>
-                            <el-input placeholder="请输入内容" v-model="input2">
+                            <el-input placeholder="请输入内容" v-model="input">
                                 <template slot="append"><i class="el-icon-user"/></template>
                             </el-input>
                         </div>
@@ -163,12 +200,6 @@
                             <el-avatar
                                     src="http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png"
                                     style="margin-right: 30px"></el-avatar>
-                            <!--                            <el-upload-->
-                            <!--                                    class="upload-demo"-->
-                            <!--                                    action="https://jsonplaceholder.typicode.com/posts/"-->
-                            <!--                                    :on-preview="handlePreview"-->
-                            <!--                                    list-type="picture">-->
-
                             <my-upload field="file"
                                        @crop-success="cropSuccess"
                                        @crop-upload-success="cropUploadSuccess"
@@ -181,7 +212,6 @@
                             <el-button @click="showUploadSelector=true" size="small" type="primary"
                                        style="background-color: #44c4b8">点击上传
                             </el-button>
-                            <!--                            </el-upload>-->
                         </div>
                     </div>
 
@@ -191,7 +221,7 @@
                             City
                         </div>
                         <div>
-                            <el-input placeholder="请输入内容" v-model="input">
+                            <el-input placeholder="请输入内容" v-model="inputMessage">
                                 <template slot="append"><i class="el-icon-location-outline"/></template>
                             </el-input>
                         </div>
@@ -222,10 +252,18 @@
 
 
     import myUpload from 'vue-image-crop-upload';
+    import {
+        TwemojiPicker
+    } from '@kevinfaguiar/vue-twemoji-picker';
+    import EmojiAllData from '@kevinfaguiar/vue-twemoji-picker/emoji-data/en/emoji-all-groups.json';
+    import EmojiDataAnimalsNature from '@kevinfaguiar/vue-twemoji-picker/emoji-data/en/emoji-group-animals-nature.json';
+    import EmojiDataFoodDrink from '@kevinfaguiar/vue-twemoji-picker/emoji-data/en/emoji-group-food-drink.json';
+    import EmojiGroups from '@kevinfaguiar/vue-twemoji-picker/emoji-data/emoji-groups.json';
+    // import EmojiService from '@kevinfaguiar/vue-twemoji-picker/src/services/EmojiService';
 
     export default {
         components: {
-            myUpload
+            myUpload, TwemojiPicker
         },
         name: "layout",
         data() {
@@ -235,6 +273,7 @@
                 showProfile: false,
                 showEditProfile: false,
                 showUploadSelector: false,
+                selectChat:'1',
                 uploadAvatarURL: 'http://47.93.53.45:9090/upload',
                 fileList: [{
                     name: 'food.jpeg',
@@ -243,18 +282,86 @@
                     name: 'food2.jpeg',
                     url: 'https://fuss10.elemecdn.com/3/63/4e7f3a15429bfda99bce42a18cdd1jpeg.jpeg?imageMogr2/thumbnail/360x360/format/webp/quality/100'
                 }],
-                inputMessage:''
+                inputMessage: '',
+                messages: [
+                    {
+                        messageId: 1,
+                        ownerId: 1,
+                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
+                        ownerName: 'Mirabelle Tow',
+                        postTime: '01:35 PM',
+                        content: 'Hello how are you?'
+                    },
+                    {
+                        messageId: 2,
+                        ownerId: 2,
+                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
+                        ownerName: 'Mirabelle Tow',
+                        postTime: '01:35 PM',
+                        content: "A paragraph is a series of related sentences developing a central idea, called the topic. Try to think about paragraphs in terms of thematic unity: a paragraph is a sentence or a group of sentences that supports one central, unified idea. Paragraphs add one idea at a time to your broader argument."
+                    },
+                    {
+                        messageId: 3,
+                        ownerId: 1,
+                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
+                        ownerName: 'Mirabelle Tow',
+                        postTime: '01:35 PM',
+                        content: "I'm fine thank you. I expect you to send me some files"
+                    },
+                    {
+                        messageId: 4,
+                        ownerId: 2,
+                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
+                        ownerName: 'Mirabelle Tow',
+                        postTime: '01:35 PM',
+                        content: "What files are you talking about? I'm sorry I can't remember right now."
+                    },
+                    {
+                        messageId: 5,
+                        ownerId: 1,
+                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
+                        ownerName: 'Mirabelle Tow',
+                        postTime: '01:35 PM',
+                        content: "I want those filssssssssssssssssssssssses for you. I want you to send 1 PDF and 1 image file."
+                    },
+                    {
+                        messageId: 6,
+                        ownerId: 2,
+                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
+                        ownerName: 'Mirabelle Tow',
+                        postTime: '01:35 PM',
+                        content: "I'm about to send the other file now."
+                    },
+                ]
             }
         },
         methods: {
             saveProfile() {
                 this.showEditProfile = false
             },
-            sendMessage(message){
+            sendMessage(content) {
+                if (content==''||content==null||content==undefined){
+                    return
+                }
+                let message = {
+                    messageId: this.messages.length + 1,
+                    ownerId: 2,
+                    avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
+                    ownerName: 'Mirabelle Tow',
+                    postTime: '01:35 PM',
+                    content: content
+                }
+                this.inputMessage = ''
 
+                this.messages.push(message)
+                setTimeout(()=>this.scrollToEnd(),500)
+            },
+            scrollToEnd(){
+                let container = this.$el.querySelector("#message-list");
+                container.scrollTop = container.scrollHeight + 40;
             },
             logout() {
-
+                this.$router.push({path:`/login`})
             },
 
             cropSuccess(imgDataUrl, field) {
@@ -278,7 +385,31 @@
             },
             beforeRemove(file, fileList) {
                 return this.$confirm(`确定移除 ${file.name}？`);
+            },
+            emojiUnicodeAdded(ele) {
+                this.inputMessage = this.inputMessage + ele
+            },
+            emojiImgAdded(ele) {
+            },
+            updateMessage(event) {
+                const targetedElement = event.target;
+                let content = targetedElement.innerHTML;
+                this.inputMessage = content.split("").reverse().join("")
+            },
+            switchChat(chatId){
+               this.selectChat = chatId
             }
+        },
+        computed: {
+            emojiDataAll() {
+                return EmojiAllData;
+            },
+            emojiGroups() {
+                return EmojiGroups;
+            }
+        },
+        created(){
+            setTimeout(()=>this.scrollToEnd(),1000)
         }
     }
 </script>
@@ -308,6 +439,8 @@
         right: 0px;
         top: 60px;
         overflow-y: hidden;
+        padding-left: 0px;
+        padding-right: 0px;
     }
 
 
@@ -378,7 +511,7 @@
         left: 20px;
         right: 20px;
         bottom: 0px;
-        overflow:scroll;
+        overflow: scroll;
     }
 
     .user-list::-webkit-scrollbar {
@@ -390,6 +523,11 @@
         justify-content: flex-start;
     }
 
+    .user:hover{
+        cursor: pointer;
+    }
+
+
     .username-and-message {
         margin-left: 20px;
     }
@@ -399,7 +537,7 @@
         font-size: 16px;
     }
 
-    .message {
+    .message-thumb {
         color: rgba(255, 255, 255, .4);
         font-size: 14px;
         margin-top: 3px;
@@ -440,13 +578,17 @@
     }
 
     .message-area {
-        height: 80%;
+        height: 77%;
         overflow-y: scroll;
+        padding-left: 20px;
+        padding-right: 20px;
     }
 
     .message-input-area {
-        height: 20%;
+        height: 23%;
         padding-top: 35px;
+        padding-left: 20px;
+        padding-right: 20px;
     }
 
     .message-input-line {
@@ -455,6 +597,7 @@
         background-color: #2e364a;
         border-radius: 10px;
         padding: 15px 20px 15px 0px;
+        align-items: center;
     }
 
     .message-input-line * {
@@ -615,5 +758,53 @@
     .save-btn:hover {
         background-color: #08887C;
     }
+
+    .message {
+        max-width: 65%;
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+
+    .message .content {
+
+        border-radius: 10px;
+        background-color: #2E364A;
+        padding: 15px;
+        word-break: break-word;
+        color: rgba(255, 255, 255, .8);
+        font-family: Inter, sans-serif;
+        font-size: 14px;
+    }
+
+    .message-meta {
+        margin-bottom: 50px;
+    }
+
+    .avatar {
+        /*margin-top: 2px;*/
+    }
+
+    .post-time {
+        color: #828282;
+        margin-top: 5px;
+        font-style: italic;
+        font-size: 12px;
+        text-align: right;
+    }
+
+    .other-message {
+        display: flex;
+        justify-items: flex-start;
+    }
+
+    .mine-message {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .other-message, .mine-message {
+        margin-bottom: 50px;
+    }
+
 </style>
 

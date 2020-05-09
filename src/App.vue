@@ -1,8 +1,7 @@
 <template>
     <div id="app">
-        <chatRoom/>
-        <!--    <img alt="Vue logo" src="./assets/logo.png">-->
-        <!--    <HelloWorld msg="Welcome to Your Vue.js App"/>-->
+<!--        <chatRoom/>-->
+        <router-view/>
     </div>
 </template>
 
@@ -27,13 +26,20 @@
         background-color: #1a2236;
     }
 
-    .el-divider[user-dived]{
-        background-color: #505c79!important;
+    .el-divider[user-dived=unselect]{
+        background-color: #424A5E;
     }
 
+    .el-divider[user-dived=select]{
+        background-color: #26A69A;
+    }
 
     .el-divider[edit-profile]{
         background-color: #424A5E;
+    }
+
+    .el-divider[account]{
+       background-color: #293042;
     }
 
     .el-tabs__nav-wrap::after{
@@ -46,6 +52,11 @@
 
     .el-dialog__body{
         padding-top: 0px!important;
+    }
+
+    .emoji {
+        height: 36px;
+        width: 36px;
     }
 
 
