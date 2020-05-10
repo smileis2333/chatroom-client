@@ -125,7 +125,7 @@
                                     {{message.content}}
                                 </div>
                                 <div class="post-time">
-                                    {{message.postTime}}
+                                    {{message.createTime|formatDate('hh:mm a')}}
                                 </div>
                             </div>
                         </div>
@@ -283,55 +283,56 @@
                     url: 'https://fuss10.elemecdn.com/3/63/4e7f3a15429bfda99bce42a18cdd1jpeg.jpeg?imageMogr2/thumbnail/360x360/format/webp/quality/100'
                 }],
                 inputMessage: '',
+                ws:null,
                 messages: [
-                    {
-                        messageId: 1,
-                        ownerId: 1,
-                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
-                        ownerName: 'Mirabelle Tow',
-                        postTime: '01:35 PM',
-                        content: 'Hello how are you?'
-                    },
-                    {
-                        messageId: 2,
-                        ownerId: 2,
-                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
-                        ownerName: 'Mirabelle Tow',
-                        postTime: '01:35 PM',
-                        content: "A paragraph is a series of related sentences developing a central idea, called the topic. Try to think about paragraphs in terms of thematic unity: a paragraph is a sentence or a group of sentences that supports one central, unified idea. Paragraphs add one idea at a time to your broader argument."
-                    },
-                    {
-                        messageId: 3,
-                        ownerId: 1,
-                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
-                        ownerName: 'Mirabelle Tow',
-                        postTime: '01:35 PM',
-                        content: "I'm fine thank you. I expect you to send me some files"
-                    },
-                    {
-                        messageId: 4,
-                        ownerId: 2,
-                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
-                        ownerName: 'Mirabelle Tow',
-                        postTime: '01:35 PM',
-                        content: "What files are you talking about? I'm sorry I can't remember right now."
-                    },
-                    {
-                        messageId: 5,
-                        ownerId: 1,
-                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
-                        ownerName: 'Mirabelle Tow',
-                        postTime: '01:35 PM',
-                        content: "I want those filssssssssssssssssssssssses for you. I want you to send 1 PDF and 1 image file."
-                    },
-                    {
-                        messageId: 6,
-                        ownerId: 2,
-                        avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
-                        ownerName: 'Mirabelle Tow',
-                        postTime: '01:35 PM',
-                        content: "I'm about to send the other file now."
-                    },
+                    // {
+                    //     messageId: 1,
+                    //     ownerId: 1,
+                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
+                    //     ownerName: 'Mirabelle Tow',
+                    //     postTime: '01:35 PM',
+                    //     content: 'Hello how are you?'
+                    // },
+                    // {
+                    //     messageId: 2,
+                    //     ownerId: 2,
+                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
+                    //     ownerName: 'Mirabelle Tow',
+                    //     postTime: '01:35 PM',
+                    //     content: "A paragraph is a series of related sentences developing a central idea, called the topic. Try to think about paragraphs in terms of thematic unity: a paragraph is a sentence or a group of sentences that supports one central, unified idea. Paragraphs add one idea at a time to your broader argument."
+                    // },
+                    // {
+                    //     messageId: 3,
+                    //     ownerId: 1,
+                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
+                    //     ownerName: 'Mirabelle Tow',
+                    //     postTime: '01:35 PM',
+                    //     content: "I'm fine thank you. I expect you to send me some files"
+                    // },
+                    // {
+                    //     messageId: 4,
+                    //     ownerId: 2,
+                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
+                    //     ownerName: 'Mirabelle Tow',
+                    //     postTime: '01:35 PM',
+                    //     content: "What files are you talking about? I'm sorry I can't remember right now."
+                    // },
+                    // {
+                    //     messageId: 5,
+                    //     ownerId: 1,
+                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
+                    //     ownerName: 'Mirabelle Tow',
+                    //     postTime: '01:35 PM',
+                    //     content: "I want those filssssssssssssssssssssssses for you. I want you to send 1 PDF and 1 image file."
+                    // },
+                    // {
+                    //     messageId: 6,
+                    //     ownerId: 2,
+                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
+                    //     ownerName: 'Mirabelle Tow',
+                    //     postTime: '01:35 PM',
+                    //     content: "I'm about to send the other file now."
+                    // },
                 ]
             }
         },
@@ -340,21 +341,21 @@
                 this.showEditProfile = false
             },
             sendMessage(content) {
+                this.ws.send(content)
                 if (content==''||content==null||content==undefined){
                     return
                 }
-                let message = {
-                    messageId: this.messages.length + 1,
-                    ownerId: 2,
-                    avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
-                    ownerName: 'Mirabelle Tow',
-                    postTime: '01:35 PM',
-                    content: content
-                }
-                this.inputMessage = ''
-
-                this.messages.push(message)
-                setTimeout(()=>this.scrollToEnd(),500)
+                // let message = {
+                //     messageId: this.messages.length + 1,
+                //     ownerId: 2,
+                //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
+                //     ownerName: 'Mirabelle Tow',
+                //     postTime: '01:35 PM',
+                //     content: content
+                // }
+                // this.inputMessage = ''
+                //
+                // this.messages.push(message)
             },
             scrollToEnd(){
                 let container = this.$el.querySelector("#message-list");
@@ -398,6 +399,23 @@
             },
             switchChat(chatId){
                this.selectChat = chatId
+            },
+            initWebSocket(){
+                this.ws = new WebSocket(`ws://127.0.0.1:9090/myHandler`)
+                this.ws.onopen = ()=>{
+                    console.log('connect success')
+                }
+
+                this.ws.onmessage = (evt)=>{
+                    let message = JSON.parse(evt.data)
+                    this.messages.push(message)
+                    setTimeout(()=>this.scrollToEnd(),500)
+                    console.log(message);
+                }
+
+                this.ws.onclose=()=>{
+                    console.log('close connection')
+                }
             }
         },
         computed: {
@@ -409,6 +427,7 @@
             }
         },
         created(){
+            this.initWebSocket()
             setTimeout(()=>this.scrollToEnd(),1000)
         }
     }

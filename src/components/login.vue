@@ -1,32 +1,37 @@
 <template>
     <div class="login-container">
+
         <div>
             <img src="../assets/logo.png" class="favicon"/>
         </div>
         <div style="font-size: 1.25rem;">
             Sign in
         </div>
-        <div>
-            <el-input v-model="loginForm.username" class="username" placeholder="username"/>
-        </div>
-        <div>
-            <el-input type="password" v-model="loginForm.password" class="password" placeholder="password"/>
-        </div>
 
-        <div style="display: flex;justify-content: flex-end">
-            <span class="reset-password" @click="$router.push({path:`/reset_password`})">Reset password</span>
-        </div>
-        <div>
-            <el-button type="primary" class="login-btn" @click="login(loginForm)">Sign in</el-button>
-        </div>
+        <el-form :model="loginForm" :rules="rules" ref="loginForm">
+            <el-form-item prop="username">
+                <el-input type="text" v-model="loginForm.username" placeholder="username or email"></el-input>
+            </el-form-item>
+            <el-form-item prop="password">
+                <el-input type="password" v-model="loginForm.password" class="password" placeholder="password"/>
+            </el-form-item>
+            <el-form-item>
+                <div style="display: flex;justify-content: flex-end">
+                    <span class="reset-password" @click="$router.push({path:`/reset_password`})">Reset password</span>
+                </div>
+            </el-form-item>
+            <el-form-item>
+                <div>
+                    <el-button type="primary" class="login-btn" @click="login(loginForm)">Sign in</el-button>
+                </div>
+            </el-form-item>
+
+        </el-form>
         <div>
             <el-divider account="login"/>
         </div>
         <div class="description">
             Login with your social media account.
-        </div>
-        <div>
-            <img src="../assets/wechat.png" class="third-icon" @click="thirdLogin"/>
         </div>
         <div class="description">
             Don't have an account?
@@ -41,19 +46,43 @@
 </template>
 
 <script>
+    import * as api from '@/common/request'
+    import message from "@/common/message";
     export default {
         name: "login",
+        mixins:[message],
         data() {
             return {
                 loginForm: {
                     username: '',
                     password: '',
+                },
+                rules: {
+                    username: [
+                        {required: true, message: '请输入用户名/邮箱', trigger: 'blur'},
+                    ],
+                    password: [
+                        {required: true, message: '请输入密码', trigger: 'blur'},
+                    ],
                 }
             }
         },
         methods: {
             login(loginForm) {
-                this.$router.push({path:`/chat`})
+                this.$refs['loginForm'].validate((valid) => {
+                    if (valid) {
+                        api.login(loginForm).then(res=>{
+                            if (res.data.success){
+                                this.success('登录成功')
+                                this.$router.push({path:`/chat`})
+                            }else {
+                                this.error(res.data.message)
+                            }
+                        })
+                    } else {
+                        return false;
+                    }
+                });
             },
             thirdLogin() {
 
