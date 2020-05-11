@@ -7,16 +7,17 @@
         <div style="font-size: 1.25rem;">
             Reset password
         </div>
-        <div>
-            <el-input v-model="resetForm.usernameOrEmail" class="username" placeholder="username or email"/>
-        </div>
-        <div>
-            <el-input type="password" v-model="resetForm.newPassword" class="password" placeholder="password"/>
-        </div>
-
-        <div>
-            <el-button type="primary" class="login-btn" @click="resetPassword">Submit</el-button>
-        </div>
+        <el-form :model="resetForm" :rules="rules" ref="resetForm">
+           <el-form-item prop="usernameOrEmail">
+               <el-input v-model.trim="resetForm.usernameOrEmail" class="username" placeholder="username or email"/>
+           </el-form-item>
+            <el-form-item prop="newPassword">
+                <el-input type="password" v-model="resetForm.newPassword" class="password" placeholder="new password"/>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" class="login-btn" @click="resetPassword(resetForm)">Submit</el-button>
+            </el-form-item>
+        </el-form>
         <div>
             <el-divider account="resetPassword"/>
         </div>
@@ -36,19 +37,44 @@
 </template>
 
 <script>
+    import * as api from '@/common/request'
+    import message from "@/common/message";
     export default {
         name: "resetPassword",
+        mixins:[message],
         data(){
             return {
                 resetForm:{
                     usernameOrEmail:'',
                     newPassword:''
+                },
+
+                rules: {
+                    usernameOrEmail: [
+                        {required: true, message: '请输入用户名或邮箱', trigger: 'blur'},
+                    ],
+                    newPassword: [
+                        {required: true, message: '请输入需要设置的新密码', trigger: 'blur'},
+                    ],
                 }
             }
         },
         methods:{
             resetPassword(resetForm){
-
+                this.$refs['resetForm'].validate((valid) => {
+                    if (valid) {
+                        api.register(resetForm).then(res=>{
+                            if (res.data.success){
+                                this.success('登录成功')
+                                this.$router.push({path: `/login`})
+                            }else {
+                                this.error(res.data.message)
+                            }
+                        })
+                    } else {
+                        return false;
+                    }
+                });
             }
         }
     }

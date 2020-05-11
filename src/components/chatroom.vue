@@ -6,13 +6,14 @@
             <el-dropdown class="right-top" trigger="click">
 
                 <div>
-                    <span class="username">Mirabelle Tow</span>
-                    <el-avatar src="http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png"></el-avatar>
+                    <span class="username">{{updateUserForm.username}}</span>
+                    <el-avatar :src="updateUserForm.avatar"></el-avatar>
                 </div>
 
                 <el-dropdown-menu slot="dropdown" class="dropItems">
                     <el-dropdown-item class="dropItem" @click.native="showProfile=true">Profile</el-dropdown-item>
-                    <el-dropdown-item class="dropItem" style="color: #ff6bac;" @click.native="logout">Logout</el-dropdown-item>
+                    <el-dropdown-item class="dropItem" style="color: #ff6bac;" @click.native="logout">Logout
+                    </el-dropdown-item>
                 </el-dropdown-menu>
             </el-dropdown>
 
@@ -62,10 +63,10 @@
                     </div>
                     <div class="profile-meta">
                         <div class="meta-avatar">
-                            <img src="http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png"/>
+                            <img :src="updateUserForm.avatar"/>
                         </div>
                         <div class="meta-username">
-                            Mirabelle Tow
+                            {{updateUserForm.username}}
                         </div>
                         <div class="last-seen">
                             Last seen: Today
@@ -79,9 +80,7 @@
                         <div v-show="selectAboutOrMedia=='about'" class="about-content">
                             <div class="field">
                                 <div>
-                                    Lorem ipsum is a pseudo-Latin text used in web design, typography, layout, and
-                                    printing in place of English to emphasise design elements over content. It's also
-                                    called placeholder (or filler) text. It's a convenient tool for mock-ups.
+                                    {{updateUserForm.description}}
                                 </div>
                             </div>
                             <div class="field">
@@ -89,7 +88,7 @@
                                     Phone
                                 </div>
                                 <div>
-                                    (555) 555 55 55
+                                    {{updateUserForm.phone}}
                                 </div>
                             </div>
                             <div class="field">
@@ -97,7 +96,7 @@
                                     City
                                 </div>
                                 <div>
-                                    Germany / Berlin
+                                    {{updateUserForm.city}}
                                 </div>
                             </div>
                         </div>
@@ -175,72 +174,92 @@
                         <el-button icon="el-icon-s-promotion" class="save-btn" @click="sendMessage(inputMessage)"/>
                     </div>
                 </div>
-                <el-dialog :visible.sync="showEditProfile" width="600px">
+                <el-dialog :visible.sync="showEditProfile" width="600px" style="margin: -100px auto;">
                     <div slot="title" class="edit-profile-title">
                         <i class="el-icon-edit" style="margin-right: 15px"/>Edit Profile
                         <el-divider edit-profile="true"></el-divider>
                     </div>
+                    <el-form :model="updateUserForm" :rules="rules" ref="updateUserForm">
+                        <div class="edit-profile-field">
+                            <div class="edit-property-name">
+                                Username
+                            </div>
+                            <div>
+                                <el-form-item prop="username">
+                                    <el-input placeholder="请输入内容" v-model.trim="updateUserForm.username">
+                                        <template slot="append"><i class="el-icon-user"/></template>
+                                    </el-input>
+                                </el-form-item>
+                            </div>
+                        </div>
 
-                    <div class="edit-profile-field">
-                        <div class="edit-property-name">
-                            FullName
+                        <div class="edit-profile-field">
+                            <div class="edit-property-name">
+                                Username
+                            </div>
+                            <div>
+                                <el-form-item prop="email">
+                                    <el-input placeholder="请输入内容" v-model.trim="updateUserForm.email">
+                                        <template slot="append"><i class="el-icon-message"/></template>
+                                    </el-input>
+                                </el-form-item>
+                            </div>
                         </div>
-                        <div>
-                            <el-input placeholder="请输入内容" v-model="input">
-                                <template slot="append"><i class="el-icon-user"/></template>
-                            </el-input>
-                        </div>
-                    </div>
 
-                    <div class="edit-profile-field">
-                        <div class="edit-property-name">
-                            Avatar
+                        <div class="edit-profile-field">
+                            <div class="edit-property-name">
+                                Avatar
+                            </div>
+                            <div style="display: flex;justify-content: flex-start">
+                                <el-avatar
+                                        :src="updateUserForm.avatar"
+                                        style="margin-right: 30px"></el-avatar>
+                                <my-upload field="file"
+                                           @crop-success="cropSuccess"
+                                           @crop-upload-success="cropUploadSuccess"
+                                           @crop-upload-fail="cropUploadFail"
+                                           v-model="showUploadSelector"
+                                           :width="300"
+                                           :height="300"
+                                           :url="uploadAvatarURL"
+                                           :withCredentials="true"
+                                ></my-upload>
+                                <el-button @click="showUploadSelector=true" size="small" type="primary"
+                                           style="background-color: #44c4b8">点击上传
+                                </el-button>
+                            </div>
                         </div>
-                        <div style="display: flex;justify-content: flex-start">
-                            <el-avatar
-                                    src="http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png"
-                                    style="margin-right: 30px"></el-avatar>
-                            <my-upload field="file"
-                                       @crop-success="cropSuccess"
-                                       @crop-upload-success="cropUploadSuccess"
-                                       @crop-upload-fail="cropUploadFail"
-                                       v-model="showUploadSelector"
-                                       :width="300"
-                                       :height="300"
-                                       :url="uploadAvatarURL"
-                            ></my-upload>
-                            <el-button @click="showUploadSelector=true" size="small" type="primary"
-                                       style="background-color: #44c4b8">点击上传
-                            </el-button>
-                        </div>
-                    </div>
 
+                        <div class="edit-profile-field">
+                            <div class="edit-property-name">
+                                City
+                            </div>
+                            <div>
+                                <el-form-item prop="city">
+                                    <el-input placeholder="请输入内容" v-model="updateUserForm.city">
+                                        <template slot="append"><i class="el-icon-location-outline"/></template>
+                                    </el-input>
+                                </el-form-item>
+                            </div>
+                        </div>
 
-                    <div class="edit-profile-field">
-                        <div class="edit-property-name">
-                            City
+                        <div class="edit-profile-field">
+                            <div class="edit-property-name">
+                                Phone
+                            </div>
+                            <div>
+                                <el-form-item prop="phone">
+                                    <el-input placeholder="请输入内容" v-model.trim="updateUserForm.phone">
+                                        <template slot="append"><i class="el-icon-mobile-phone"/></template>
+                                    </el-input>
+                                </el-form-item>
+                            </div>
                         </div>
-                        <div>
-                            <el-input placeholder="请输入内容" v-model="inputMessage">
-                                <template slot="append"><i class="el-icon-location-outline"/></template>
-                            </el-input>
-                        </div>
-                    </div>
-
-                    <div class="edit-profile-field">
-                        <div class="edit-property-name">
-                            Phone
-                        </div>
-                        <div>
-                            <el-input placeholder="请输入内容" v-model="input">
-                                <template slot="append"><i class="el-icon-mobile-phone"/></template>
-                            </el-input>
-                        </div>
-                    </div>
-
+                    </el-form>
 
                     <div slot="footer" class="dialog-footer">
-                        <el-button type="primary" @click="saveProfile" class="save-profile">Save</el-button>
+                        <el-button type="primary" @click="saveProfile({...updateUserForm})" class="save-profile">Save
+                        </el-button>
                     </div>
                 </el-dialog>
             </el-main>
@@ -256,25 +275,25 @@
         TwemojiPicker
     } from '@kevinfaguiar/vue-twemoji-picker';
     import EmojiAllData from '@kevinfaguiar/vue-twemoji-picker/emoji-data/en/emoji-all-groups.json';
-    import EmojiDataAnimalsNature from '@kevinfaguiar/vue-twemoji-picker/emoji-data/en/emoji-group-animals-nature.json';
-    import EmojiDataFoodDrink from '@kevinfaguiar/vue-twemoji-picker/emoji-data/en/emoji-group-food-drink.json';
     import EmojiGroups from '@kevinfaguiar/vue-twemoji-picker/emoji-data/emoji-groups.json';
-    // import EmojiService from '@kevinfaguiar/vue-twemoji-picker/src/services/EmojiService';
+    import * as api from '@/common/request'
+    import message from "@/common/message";
 
     export default {
         components: {
             myUpload, TwemojiPicker
         },
+        mixins: [message],
         name: "layout",
         data() {
             return {
                 input: '',
-                selectAboutOrMedia: 'media',
+                selectAboutOrMedia: 'about',
                 showProfile: false,
                 showEditProfile: false,
                 showUploadSelector: false,
-                selectChat:'1',
-                uploadAvatarURL: 'http://47.93.53.45:9090/upload',
+                selectChat: '1',
+                uploadAvatarURL: 'http://127.0.0.1:9090/user/avatar',
                 fileList: [{
                     name: 'food.jpeg',
                     url: 'https://fuss10.elemecdn.com/3/63/4e7f3a15429bfda99bce42a18cdd1jpeg.jpeg?imageMogr2/thumbnail/360x360/format/webp/quality/100'
@@ -283,94 +302,70 @@
                     url: 'https://fuss10.elemecdn.com/3/63/4e7f3a15429bfda99bce42a18cdd1jpeg.jpeg?imageMogr2/thumbnail/360x360/format/webp/quality/100'
                 }],
                 inputMessage: '',
-                ws:null,
-                messages: [
-                    // {
-                    //     messageId: 1,
-                    //     ownerId: 1,
-                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
-                    //     ownerName: 'Mirabelle Tow',
-                    //     postTime: '01:35 PM',
-                    //     content: 'Hello how are you?'
-                    // },
-                    // {
-                    //     messageId: 2,
-                    //     ownerId: 2,
-                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
-                    //     ownerName: 'Mirabelle Tow',
-                    //     postTime: '01:35 PM',
-                    //     content: "A paragraph is a series of related sentences developing a central idea, called the topic. Try to think about paragraphs in terms of thematic unity: a paragraph is a sentence or a group of sentences that supports one central, unified idea. Paragraphs add one idea at a time to your broader argument."
-                    // },
-                    // {
-                    //     messageId: 3,
-                    //     ownerId: 1,
-                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
-                    //     ownerName: 'Mirabelle Tow',
-                    //     postTime: '01:35 PM',
-                    //     content: "I'm fine thank you. I expect you to send me some files"
-                    // },
-                    // {
-                    //     messageId: 4,
-                    //     ownerId: 2,
-                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
-                    //     ownerName: 'Mirabelle Tow',
-                    //     postTime: '01:35 PM',
-                    //     content: "What files are you talking about? I'm sorry I can't remember right now."
-                    // },
-                    // {
-                    //     messageId: 5,
-                    //     ownerId: 1,
-                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar3.png',
-                    //     ownerName: 'Mirabelle Tow',
-                    //     postTime: '01:35 PM',
-                    //     content: "I want those filssssssssssssssssssssssses for you. I want you to send 1 PDF and 1 image file."
-                    // },
-                    // {
-                    //     messageId: 6,
-                    //     ownerId: 2,
-                    //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
-                    //     ownerName: 'Mirabelle Tow',
-                    //     postTime: '01:35 PM',
-                    //     content: "I'm about to send the other file now."
-                    // },
-                ]
+                ws: null,
+                messages: [],
+                updateUserForm: {
+                    username: '',
+                    email: '',
+                    city: '',
+                    phone: '',
+                    description: '',
+                    avatar: ''
+                },
+
+                rules: {
+                    username: [
+                        {required: true, message: '请输入用户名', trigger: 'blur'},
+                    ],
+                    email: [
+                        {required: true, message: '请输入邮箱', trigger: 'blur'},
+                        {type: 'email', message: '请输入正确的邮箱', trigger: 'blur'}
+                    ], phone: [
+                        {validator: this.checkPhone, trigger: 'blur'}
+                    ]
+                }
             }
         },
         methods: {
-            saveProfile() {
-                this.showEditProfile = false
+            saveProfile(updatedForm) {
+                this.$refs['updateUserForm'].validate((valid) => {
+                    if (valid) {
+                        api.updateUser(updatedForm).then(res => {
+                            if (res.data.success) {
+                                this.success('更新成功')
+                                this.showEditProfile = false
+                                this.refreshUser()
+                            } else {
+                                this.error(`更新失败, ${res.data.message}`)
+                            }
+                        })
+                    } else {
+                        return false;
+                    }
+                });
             },
             sendMessage(content) {
                 this.ws.send(content)
-                if (content==''||content==null||content==undefined){
+                if (content == '' || content == null || content == undefined) {
                     return
                 }
-                // let message = {
-                //     messageId: this.messages.length + 1,
-                //     ownerId: 2,
-                //     avatar: ' http://roba.laborasyon.com/demos/dark/dist/media/img/avatar4.png',
-                //     ownerName: 'Mirabelle Tow',
-                //     postTime: '01:35 PM',
-                //     content: content
-                // }
-                // this.inputMessage = ''
-                //
-                // this.messages.push(message)
             },
-            scrollToEnd(){
+            scrollToEnd() {
                 let container = this.$el.querySelector("#message-list");
-                container.scrollTop = container.scrollHeight + 40;
+                container.scrollTop = container.scrollHeight;
             },
             logout() {
-                this.$router.push({path:`/login`})
+                api.logout().then(res => {
+                    this.$router.push({path: `/login`})
+                })
             },
 
             cropSuccess(imgDataUrl, field) {
-                this.imgDataUrl = imgDataUrl;
             },
-            cropUploadSuccess(jsonData, field) {
-                this.successImgURL = jsonData.url
-                this.user.avatar = jsonData.url
+            cropUploadSuccess(result, field) {
+                if (result.success) {
+                    this.refreshUser()
+                }
             },
             cropUploadFail(status, field) {
                 this.$message.error("上传失败，请查看网络连接")
@@ -397,25 +392,50 @@
                 let content = targetedElement.innerHTML;
                 this.inputMessage = content.split("").reverse().join("")
             },
-            switchChat(chatId){
-               this.selectChat = chatId
+            switchChat(chatId) {
+                this.selectChat = chatId
             },
-            initWebSocket(){
+            initWebSocket() {
                 this.ws = new WebSocket(`ws://127.0.0.1:9090/myHandler`)
-                this.ws.onopen = ()=>{
+                this.ws.onopen = () => {
                     console.log('connect success')
                 }
 
-                this.ws.onmessage = (evt)=>{
+                this.ws.onmessage = (evt) => {
                     let message = JSON.parse(evt.data)
                     this.messages.push(message)
-                    setTimeout(()=>this.scrollToEnd(),500)
                     console.log(message);
                 }
 
-                this.ws.onclose=()=>{
+                this.ws.onclose = () => {
                     console.log('close connection')
                 }
+            },
+            initUpdateUserForm(userForm) {
+                this.updateUserForm = userForm
+            },
+            checkPhone(rule, value, callback) {
+                if (!value) {
+                    return callback();
+                } else {
+                    const reg = /^1[3|4|5|7|8][0-9]\d{8}$/
+                    console.log(reg.test(value));
+                    if (reg.test(value)) {
+                        callback();
+                    } else {
+                        return callback(new Error('请输入正确的手机号'));
+                    }
+                }
+            },
+            refreshUser() {
+                api.getUser().then(res => {
+                    if (res.data.userId != null) {
+                        this.$store.commit('setUser', res.data)
+                        this.initUpdateUserForm({...this.$store.state.user})
+                    } else {
+                        this.error(res.data.message)
+                    }
+                })
             }
         },
         computed: {
@@ -426,9 +446,16 @@
                 return EmojiGroups;
             }
         },
-        created(){
+        created() {
+            // this.refreshUser()
             this.initWebSocket()
-            setTimeout(()=>this.scrollToEnd(),1000)
+            this.initUpdateUserForm({...this.$store.state.user})
+            // setTimeout(() => this.scrollToEnd(), 1000)
+        },
+        updated(){
+            this.$nextTick(function () {
+                this.scrollToEnd()
+            })
         }
     }
 </script>
@@ -542,7 +569,7 @@
         justify-content: flex-start;
     }
 
-    .user:hover{
+    .user:hover {
         cursor: pointer;
     }
 

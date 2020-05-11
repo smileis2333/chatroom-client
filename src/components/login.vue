@@ -10,10 +10,10 @@
 
         <el-form :model="loginForm" :rules="rules" ref="loginForm">
             <el-form-item prop="username">
-                <el-input type="text" v-model="loginForm.username" placeholder="username or email"></el-input>
+                <el-input type="text" v-model.trim="loginForm.username" placeholder="username or email"></el-input>
             </el-form-item>
             <el-form-item prop="password">
-                <el-input type="password" v-model="loginForm.password" class="password" placeholder="password"/>
+                <el-input type="password" v-model.trim="loginForm.password" class="password" placeholder="password"/>
             </el-form-item>
             <el-form-item>
                 <div style="display: flex;justify-content: flex-end">
@@ -72,8 +72,8 @@
                 this.$refs['loginForm'].validate((valid) => {
                     if (valid) {
                         api.login(loginForm).then(res=>{
-                            if (res.data.success){
-                                this.success('登录成功')
+                            if (res.data.userId!=null){
+                                this.$store.commit('setUser',res.data)
                                 this.$router.push({path:`/chat`})
                             }else {
                                 this.error(res.data.message)
