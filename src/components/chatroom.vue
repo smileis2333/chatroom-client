@@ -38,12 +38,12 @@
                               style="background-color: black!important;"></el-input>
                 </div>
                 <div class="user-list">
-                    <div v-for="i in 6" :key="i">
+                    <div v-for="privateChat in privateChats" :key="privateChat.privateChatId">
                         <div class="user" @click="switchChat(i)">
                             <el-avatar
-                                    src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png"></el-avatar>
+                                    :src="privateChat.receiver.avatar"></el-avatar>
                             <div class="username-and-message">
-                                <div class="username">Townsend Seary</div>
+                                <div class="username">{{privateChat.receiver.username}}</div>
                                 <div class="message-thumb">What's up, how are you?</div>
                             </div>
                             <div class="message-count-and-time">
@@ -53,11 +53,11 @@
                                 <div>
                                     <el-dropdown trigger="click">
                                         <span class="el-dropdown-link">
-                                                                        <i class="el-icon-more option-icon"></i>
+                                            <i class="el-icon-more option-icon"></i>
                                         </span>
                                         <el-dropdown-menu slot="dropdown">
                                             <el-dropdown-item>Profile</el-dropdown-item>
-                                            <el-dropdown-item @click="closePrivateChat">Delete</el-dropdown-item>
+                                            <el-dropdown-item @click="closeChat(privateChat.receiverId)">Delete</el-dropdown-item>
                                         </el-dropdown-menu>
                                     </el-dropdown>
                                 </div>
@@ -245,7 +245,7 @@
                 </div>
             </el-dialog>
             <el-main>
-                <chat v-if="stompClient!=null&&stompClient.connected" @openNewChat="openNewChat" :stomp-client="stompClient"/>
+                <chat v-if="stompClient!=null&&stompClient.connected" @openNewChat="openChat" :stomp-client="stompClient"/>
             </el-main>
         </el-container>
     </el-container>
@@ -303,6 +303,7 @@
 
                 url: 'http://localhost:9090/websocket',
                 stompClient: null,
+                privateChats:[]
             }
         },
         methods: {
@@ -312,6 +313,7 @@
 
                 this.stompClient.connect({}, () => {
                     console.log('stomp  连接成功')
+                    this.subscribeOpenChat()
                 })
             },
             saveProfile(updatedForm) {
@@ -380,16 +382,43 @@
                 this.updateUserForm = this.$store.state.user
                 done()
             },
-            closePrivateChat(targetUserId) {
+            openChat(targetUserId){
+                this.sendOpenChatMessage(this.stompClient,targetUserId)
+                setTimeout(()=>this.refreshPrivateChatList(),2000)
+                /**
+                 * 还需要订阅私聊，todo
+                 */
+            },
+            closeChat(targetUserId){
+                this.sendCloseChatMessage(this.stompClient,targetUserId)
+                setTimeout(()=>this.refreshPrivateChatList(),2000)
+                /**
+                 * 还需要取消订阅私聊，todo
+                 */
+            },
+            refreshPrivateChatList(){
+                api.applyPrivateChat(this.$store.state.user.userId).then(res=>{
+                    this.privateChats = res.data
+                })
+            },
+            subscribeOpenChat(){
 
+                this.stompClient.subscribe(`/subscribe/openChat/${this.$store.state.user.userId}`, (message) => {
+                    if (message.body) {
+                        console.log('监听私聊，确认是否有人找自己私聊')
+                        this.refreshUser()
+                    }
+                })
             },
-            openNewChat(targetUserId){
-                alert(targetUserId)
-            },
+
         },
 
         created() {
+            /**
+             * 需要订阅openChat和closeChat的反馈，用来刷新私聊列表
+             */
             this.connect()
+            this.refreshPrivateChatList()
             this.initUpdateUserForm({...this.$store.state.user})
         },
 

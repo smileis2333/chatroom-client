@@ -23,5 +23,17 @@ export default {
                 'event': 'LOGOUT'
             }))
         },
+        sendOpenChatMessage(client,targetUserId){
+            client.send('/send/openChat', {}, JSON.stringify({
+                'user': this.$store.state.user,
+                'targetUserId': targetUserId
+            }))
+        },
+        sendCloseChatMessage(client,targetUserId){
+            client.send('/send/closeChat', {}, JSON.stringify({
+                'user': this.$store.state.user,
+                'targetUserId': targetUserId
+            }))
+        },
     }
 }

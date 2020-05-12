@@ -31,3 +31,7 @@ export function applyMoreMessage(page,pageSize) {
         }
     })
 }
+
+export function applyPrivateChat(senderId) {
+    return axios.get(`/chat/private/${senderId}`)
+}

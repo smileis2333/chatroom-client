@@ -21,7 +21,7 @@
                                 </span>
 
                         <el-dropdown-menu slot="dropdown">
-                            <el-dropdown-item @click.native="$emit('openNewChat',message.senderId)">New Chat</el-dropdown-item>
+                            <el-dropdown-item @click.native="$emit('openChat',message.senderId)">New Chat</el-dropdown-item>
                             <el-dropdown-item @click.native="closePrivateChat(message.senderId)">Profile</el-dropdown-item>
                         </el-dropdown-menu>
                     </el-dropdown>
