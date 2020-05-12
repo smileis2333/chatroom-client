@@ -22,3 +22,12 @@ export function getUser() {
 export function updateUser(updateForm) {
     return axios.post(`/user`,updateForm)
 }
+
+export function applyMoreMessage(page,pageSize) {
+    return axios.get(`/message`,{
+        params:{
+            page:page-1,
+            size:pageSize
+        }
+    })
+}

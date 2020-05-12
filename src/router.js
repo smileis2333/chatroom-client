@@ -4,13 +4,12 @@ import chatroom from "@/components/chatroom";
 import register from "@/components/register";
 import resetPassword from "@/components/resetPassword";
 import store from "@/vuex";
-import el from "element-ui/src/locale/lang/el";
 
 
 const router = new VueRouter({
     routes: [
         {
-          path:'/',redirect:'login'
+          path:'/',redirect:'/login'
         },
         {
             path:'/login', component: login
@@ -29,12 +28,14 @@ const router = new VueRouter({
 
 
 router.beforeEach((to, from, next) => {
-    if (store.state.isLogin||to.path=='/'||to.path=='/login'){
+    if (store.state.isLogin||to.path=='/'||to.path=='/login'||to.path=='/register'||to.path=='/resetPassword'){
         next()
     }else {
         next()
         next('/login')
     }
+
+    // next()
 })
 
 export default router

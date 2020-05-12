@@ -88,7 +88,7 @@
                                     Phone
                                 </div>
                                 <div>
-                                    {{updateUserForm.phone}}
+                                    {{updateUserForm.phone||'未填'}}
                                 </div>
                             </div>
                             <div class="field">
@@ -96,7 +96,7 @@
                                     City
                                 </div>
                                 <div>
-                                    {{updateUserForm.city}}
+                                    {{updateUserForm.city||'未填'}}
                                 </div>
                             </div>
                         </div>
@@ -115,26 +115,38 @@
                         </div>
                     </div>
                 </el-card>
-                <div class="message-area" id="message-list">
+                <div class="message-area" id="message-list" @scroll="changeScrollDirection">
+                    <div v-if="!hasMoreMessage" class="has-more-message">
+                        已经没有更多消息了
+                    </div>
+                    <div v-if="hasMoreMessage" class="has-more-message has-more-message-hover" @click="applyMoreMessage(page,pageSize)">
+                        <i class="el-icon-pie-chart" style="margin-right: 15px"/>查看更多消息
+                    </div>
                     <div v-for="message in messages" :key="message.messageId" class="message-meta">
-                        <div v-if="message.ownerId==1" class="other-message">
+                        <div v-if="!isMyMessage(message)" class="other-message">
                             <el-avatar :src="message.avatar" class="avatar"></el-avatar>
                             <div class="message">
                                 <div class="content">
+                                    <span v-if="message.contextType=='TEXT'">
                                     {{message.content}}
+                                    </span>
+                                    <img v-if="message.contextType=='RESOURCE'" :src="message.content" class="message-image" alt="">
                                 </div>
                                 <div class="post-time">
                                     {{message.createTime|formatDate('hh:mm a')}}
                                 </div>
                             </div>
                         </div>
-                        <div v-if="message.ownerId==2" class="mine-message">
+                        <div v-if="isMyMessage(message)" class="mine-message">
                             <div class="message">
                                 <div class="content">
+                                    <span v-if="message.contextType=='TEXT'">
                                     {{message.content}}
+                                    </span>
+                                    <img v-if="message.contextType=='RESOURCE'" :src="message.content" class="message-image" alt="图片">
                                 </div>
                                 <div class="post-time">
-                                    {{message.postTime}}
+                                    {{message.createTime|formatDate('hh:mm a')}}
                                 </div>
                             </div>
                             <el-avatar :src="message.avatar" class="avatar"></el-avatar>
@@ -163,12 +175,13 @@
 
                         <el-upload
                                 class="upload-demo"
-                                action="https://jsonplaceholder.typicode.com/posts/"
-                                :on-preview="handlePreview"
-                                :on-remove="handleRemove"
-                                :before-remove="beforeRemove"
+                                action="http://127.0.0.1:9090/file/upload"
+                                name="file"
+                                :with-credentials="true"
+                                :show-file-list="false"
+                                :on-success="handleSuccess"
                                 multiple
-                                :on-exceed="handleExceed">
+                                >
                             <el-button icon="el-icon-paperclip"/>
                         </el-upload>
                         <el-button icon="el-icon-s-promotion" class="save-btn" @click="sendMessage(inputMessage)"/>
@@ -278,6 +291,9 @@
     import EmojiGroups from '@kevinfaguiar/vue-twemoji-picker/emoji-data/emoji-groups.json';
     import * as api from '@/common/request'
     import message from "@/common/message";
+    import SockJS from 'sockjs-client';
+    import Stomp from 'stompjs';
+    import moment from 'moment'
 
     export default {
         components: {
@@ -302,8 +318,13 @@
                     url: 'https://fuss10.elemecdn.com/3/63/4e7f3a15429bfda99bce42a18cdd1jpeg.jpeg?imageMogr2/thumbnail/360x360/format/webp/quality/100'
                 }],
                 inputMessage: '',
-                ws: null,
+                stompClient: null,
+                url: 'http://localhost:9090/websocket',
                 messages: [],
+                hasMoreMessage:true,
+                scrollDirection:'bottom',
+                page:1,
+                pageSize:10,
                 updateUserForm: {
                     username: '',
                     email: '',
@@ -345,15 +366,15 @@
                 });
             },
             sendMessage(content) {
-                this.ws.send(content)
-                if (content == '' || content == null || content == undefined) {
-                    return
+                if (content!=null&&content!=undefined&&content!=''){
+                    this.stompClient.send('/send/chatRoom',{},JSON.stringify({
+                        'content':content,
+                        'user': this.$store.state.user,
+                        'ContextType':'TEXT'
+                    }))
                 }
             },
-            scrollToEnd() {
-                let container = this.$el.querySelector("#message-list");
-                container.scrollTop = container.scrollHeight;
-            },
+
             logout() {
                 api.logout().then(res => {
                     this.$router.push({path: `/login`})
@@ -370,46 +391,24 @@
             cropUploadFail(status, field) {
                 this.$message.error("上传失败，请查看网络连接")
             },
-            handleRemove(file, fileList) {
-                console.log(file, fileList);
-            },
-            handlePreview(file) {
-                console.log(file);
-            },
-            handleExceed(files, fileList) {
-                this.$message.warning(`当前限制选择 3 个文件，本次选择了 ${files.length} 个文件，共选择了 ${files.length + fileList.length} 个文件`);
-            },
-            beforeRemove(file, fileList) {
-                return this.$confirm(`确定移除 ${file.name}？`);
+            handleSuccess(res,file,fileList){
+                if(res.success){
+                    this.stompClient.send('/send/chatRoom',{},JSON.stringify({
+                        'content':res.message,
+                        'user': this.$store.state.user,
+                        'ContextType':'RESOURCE'
+                    }))
+                }else{
+                    this.error(`上传文件失败, ${res.message}`)
+                }
             },
             emojiUnicodeAdded(ele) {
                 this.inputMessage = this.inputMessage + ele
             },
             emojiImgAdded(ele) {
             },
-            updateMessage(event) {
-                const targetedElement = event.target;
-                let content = targetedElement.innerHTML;
-                this.inputMessage = content.split("").reverse().join("")
-            },
             switchChat(chatId) {
                 this.selectChat = chatId
-            },
-            initWebSocket() {
-                this.ws = new WebSocket(`ws://127.0.0.1:9090/myHandler`)
-                this.ws.onopen = () => {
-                    console.log('connect success')
-                }
-
-                this.ws.onmessage = (evt) => {
-                    let message = JSON.parse(evt.data)
-                    this.messages.push(message)
-                    console.log(message);
-                }
-
-                this.ws.onclose = () => {
-                    console.log('close connection')
-                }
             },
             initUpdateUserForm(userForm) {
                 this.updateUserForm = userForm
@@ -436,7 +435,58 @@
                         this.error(res.data.message)
                     }
                 })
-            }
+            },
+            connect() {
+                let sockJS = new SockJS(this.url);
+                this.stompClient = Stomp.over(sockJS);
+
+                this.stompClient.connect({}, () => {
+                    console.log('stomp  连接成功')
+                    this.stompClient.subscribe('/subscribe/chatRoom',(message)=>{
+                        if (message.body){
+                            console.log('接受聊天室消息')
+                            let messageVo = JSON.parse(message.body);
+                            console.log(messageVo)
+                            this.messages.push(messageVo)
+                            this.inputMessage = ''
+                        }
+                    })
+                })
+            },
+            isMyMessage(message){
+                return message.ownerId==this.$store.state.user.userId
+            },
+            applyMoreMessage(page,pageSize){
+                this.scrollDirection = 'top'
+                api.applyMoreMessage(page,pageSize).then(res=>{
+                    if (res.data.content.length>0){
+                        if (res.data.totalPages==this.page){
+                            this.hasMoreMessage = false
+                        }else{
+                            this.page++;
+                        }
+                        // res.data.
+                        this.messages = res.data.content.concat(this.messages)
+                    }else{
+                        this.hasMoreMessage = false
+                    }
+                })
+            },
+            changeScrollDirection(event){
+
+                let obj = this.$el.querySelector("#message-list");
+                if (obj.clientHeight+obj.scrollTop+1>obj.scrollHeight){
+                    this.scrollDirection = 'bottom'
+                }
+            },
+            scrollToEnd() {
+                let container = this.$el.querySelector("#message-list");
+                container.scrollTop = container.scrollHeight;
+            },
+            scrollToTop() {
+                let container = this.$el.querySelector("#message-list");
+                container.scrollTop = -container.scrollHeight;
+            },
         },
         computed: {
             emojiDataAll() {
@@ -447,14 +497,16 @@
             }
         },
         created() {
-            // this.refreshUser()
-            this.initWebSocket()
+            this.connect()
             this.initUpdateUserForm({...this.$store.state.user})
-            // setTimeout(() => this.scrollToEnd(), 1000)
         },
         updated(){
             this.$nextTick(function () {
-                this.scrollToEnd()
+                if (this.scrollDirection=='top'){
+                    this.scrollToTop()
+                }else if (this.scrollDirection=='bottom'){
+                    this.scrollToEnd()
+                }
             })
         }
     }
@@ -850,6 +902,20 @@
 
     .other-message, .mine-message {
         margin-bottom: 50px;
+    }
+
+    .message-image{
+        max-width: 200px;
+        border-radius: 5px;
+    }
+
+    .has-more-message{
+        color: cornflowerblue;
+        text-align: center;
+    }
+
+    .has-more-message-hover:hover{
+        cursor: pointer;
     }
 
 </style>
