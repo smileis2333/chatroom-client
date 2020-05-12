@@ -29,11 +29,5 @@ export default {
                 'targetUserId': targetUserId
             }))
         },
-        sendCloseChatMessage(client,targetUserId){
-            client.send('/send/closeChat', {}, JSON.stringify({
-                'user': this.$store.state.user,
-                'targetUserId': targetUserId
-            }))
-        },
     }
 }

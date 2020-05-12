@@ -22,7 +22,7 @@
 
                         <el-dropdown-menu slot="dropdown">
                             <el-dropdown-item @click.native="$emit('openChat',message.senderId)">New Chat</el-dropdown-item>
-                            <el-dropdown-item @click.native="closePrivateChat(message.senderId)">Profile</el-dropdown-item>
+                            <el-dropdown-item >Profile</el-dropdown-item>
                         </el-dropdown-menu>
                     </el-dropdown>
                     <div class="message">
@@ -105,7 +105,7 @@
         name: "chat",
         components:{TwemojiPicker},
         mixins:[messageStomp],
-        props:['stompClient'],
+        props:['stompClient','chatType','receiverId'],
         data(){
           return {
               messages: [],
@@ -195,14 +195,22 @@
             },
             emojiGroups() {
                 return EmojiGroups;
+            },
+        },
+        watch:{
+            receiverId(){
+                /**
+                 * vuex设置messages
+                 */
+
+                // console.log('change')
+                // alert('change')
             }
         },
         created(){
             this.subscribe()
             window.addEventListener('beforeunload',()=>this.sendLogoutMessage(this.stompClient))
         },
-        beforeClose(){
-        }
     }
 </script>
 

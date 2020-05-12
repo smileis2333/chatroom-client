@@ -35,3 +35,7 @@ export function applyMoreMessage(page,pageSize) {
 export function applyPrivateChat(senderId) {
     return axios.get(`/chat/private/${senderId}`)
 }
+
+export function deletePrivateChat(targetUserId) {
+    return axios.delete(`/chat/private/other/${targetUserId}`)
+}

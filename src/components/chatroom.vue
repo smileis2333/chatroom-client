@@ -7,7 +7,7 @@
             </div>
             <div class="return-room">
                 <img src="../assets/return.png" alt="" style="width: 40px">
-                <span style="color: #243b93">返回聊天室</span>
+                <span style="color: #243b93" @click="receiverId=-1">返回聊天室</span>
 
             </div>
             <div style="display: flex;align-items: center">
@@ -38,8 +38,8 @@
                               style="background-color: black!important;"></el-input>
                 </div>
                 <div class="user-list">
-                    <div v-for="privateChat in privateChats" :key="privateChat.privateChatId">
-                        <div class="user" @click="switchChat(i)">
+                    <div v-for="(privateChat,index) in privateChats" :key="privateChat.privateChatId">
+                        <div class="user" @click="switchChat(privateChat.receiverId)">
                             <el-avatar
                                     :src="privateChat.receiver.avatar"></el-avatar>
                             <div class="username-and-message">
@@ -57,14 +57,14 @@
                                         </span>
                                         <el-dropdown-menu slot="dropdown">
                                             <el-dropdown-item>Profile</el-dropdown-item>
-                                            <el-dropdown-item @click="closeChat(privateChat.receiverId)">Delete</el-dropdown-item>
+                                            <el-dropdown-item @click.native="closeChat(privateChat.receiverId)">Delete</el-dropdown-item>
                                         </el-dropdown-menu>
                                     </el-dropdown>
                                 </div>
                             </div>
                         </div>
 
-                        <el-divider :user-dived="selectChat==i?'select':'unselect'" v-if="i!=10"></el-divider>
+                        <el-divider :user-dived="receiverId==privateChat.receiverId?'select':'unselect'" ></el-divider>
                     </div>
                 </div>
             </el-aside>
@@ -245,7 +245,7 @@
                 </div>
             </el-dialog>
             <el-main>
-                <chat v-if="stompClient!=null&&stompClient.connected" @openNewChat="openChat" :stomp-client="stompClient"/>
+                <chat :receiver-id="receiverId" :chat-type="chatType" v-if="stompClient!=null&&stompClient.connected" @openChat="openChat" :stomp-client="stompClient"/>
             </el-main>
         </el-container>
     </el-container>
@@ -276,8 +276,10 @@
                 showProfile: false,
                 showEditProfile: false,
                 showUploadSelector: false,
-                selectChat: '1',
+                // selectChat: '',
                 uploadAvatarURL: 'http://127.0.0.1:9090/user/avatar',
+                chatType:'chatRoom',
+                receiverId:'-1',
                 editWhich: 'basic',
                 updateUserForm: {
                     username: '',
@@ -349,8 +351,8 @@
             cropUploadFail(status, field) {
                 this.$message.error("上传失败，请查看网络连接")
             },
-            switchChat(chatId) {
-                this.selectChat = chatId
+            switchChat(receiverId) {
+                this.receiverId = receiverId
             },
             initUpdateUserForm(userForm) {
                 this.updateUserForm = userForm
@@ -383,6 +385,7 @@
                 done()
             },
             openChat(targetUserId){
+                console.log('打开私聊');
                 this.sendOpenChatMessage(this.stompClient,targetUserId)
                 setTimeout(()=>this.refreshPrivateChatList(),2000)
                 /**
@@ -390,11 +393,12 @@
                  */
             },
             closeChat(targetUserId){
-                this.sendCloseChatMessage(this.stompClient,targetUserId)
-                setTimeout(()=>this.refreshPrivateChatList(),2000)
-                /**
-                 * 还需要取消订阅私聊，todo
-                 */
+                api.deletePrivateChat(targetUserId).then(res=>{
+                    if (res.data.success){
+                        this.success('删除私聊成功')
+                        this.refreshPrivateChatList()
+                    }
+                })
             },
             refreshPrivateChatList(){
                 api.applyPrivateChat(this.$store.state.user.userId).then(res=>{
@@ -402,15 +406,13 @@
                 })
             },
             subscribeOpenChat(){
-
-                this.stompClient.subscribe(`/subscribe/openChat/${this.$store.state.user.userId}`, (message) => {
+                this.stompClient.subscribe(`/subscribe/openChat/1`, (message) => {
                     if (message.body) {
-                        console.log('监听私聊，确认是否有人找自己私聊')
-                        this.refreshUser()
+                        console.log('有人发起私聊了')
+                        this.refreshPrivateChatList()
                     }
                 })
             },
-
         },
 
         created() {
