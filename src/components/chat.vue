@@ -17,7 +17,7 @@
                 <div v-if="message.contextType!='WELCOME'&&!isMyMessage(message)" class="other-message">
                     <el-dropdown trigger="click">
                                 <span class="el-dropdown-link">
-                                    <el-avatar :src="message.avatar" class="avatar"></el-avatar>
+                                    <el-avatar :title="message.username" :src="message.avatar" class="avatar"></el-avatar>
                                 </span>
 
                         <el-dropdown-menu slot="dropdown">
@@ -73,7 +73,7 @@
                         isLoadingLabel="Loading..."
                 />
 
-                <el-input v-model="inputMessage" @keypress.enter.native="sendMessage(stompClient,inputMessage)" placeholder="Write a message"/>
+                <el-input v-model="inputMessage" @keypress.enter.native="sendMessage" placeholder="Write a message"/>
 
                 <el-upload
                         class="upload-demo"
@@ -86,7 +86,7 @@
                 >
                     <el-button icon="el-icon-paperclip"/>
                 </el-upload>
-                <el-button icon="el-icon-s-promotion" class="save-btn" @click="sendMessage(stompClient,inputMessage)"/>
+                <el-button icon="el-icon-s-promotion" class="save-btn" @click="sendMessage"/>
             </div>
         </div>
     </div>
@@ -100,6 +100,7 @@
     import EmojiAllData from '@kevinfaguiar/vue-twemoji-picker/emoji-data/en/emoji-all-groups.json';
     import EmojiGroups from '@kevinfaguiar/vue-twemoji-picker/emoji-data/emoji-groups.json';
     import messageStomp from "@/common/message-stomp";
+    import message from "@/common/message";
 
     export default {
         name: "chat",
@@ -167,17 +168,55 @@
                     this.error(`上传文件失败, ${res.message}`)
                 }
             },
-            subscribe(){
+            subscribeChatRoom(){
                 this.stompClient.subscribe('/subscribe/chatRoom', (message) => {
                     if (message.body) {
                         console.log('接受聊天室消息')
                         let messageVo = JSON.parse(message.body);
                         console.log(messageVo)
-                        this.messages.push(messageVo)
-                        this.inputMessage = ''
+                        if (this.receiverId!=-1){
+                            this.$store.state.messagesMap.get(-1).push(messageVo)
+                        }else {
+                            this.messages.push(messageVo)
+                        }
                     }
                 })
                 this.sendLoginMessage(this.stompClient)
+            },
+            subscribePrivateChat(targetUserId){
+                this.stompClient.subscribe(`/subscribe/chat/sender/${targetUserId}/receiver/${this.$store.state.user.userId}`, (message) => {
+                    if (message.body) {
+                        console.log('接受私聊消息')
+                        let messageVo = JSON.parse(message.body);
+                        console.log(messageVo)
+
+                        if (this.receiverId!=-targetUserId){
+                            this.$store.state.messagesMap.get(targetUserId).push(messageVo)
+                        }else {
+                            this.messages.push(messageVo)
+                        }
+                    }
+                })
+            },
+            subscribePrivateMySideChat(targetUserId){
+                this.stompClient.subscribe(`/subscribe/chat/sender/${this.$store.state.user.userId}/receiver/${targetUserId}`, (message) => {
+                    if (message.body) {
+                        console.log('接受私聊消息')
+                        let messageVo = JSON.parse(message.body);
+                        if (this.receiverId!=-targetUserId){
+                            this.$store.state.messagesMap.get(targetUserId).push(messageVo)
+                        }else {
+                            this.messages.push(messageVo)
+                        }
+                    }
+                })
+            },
+            sendMessage(){
+                if (this.receiverId=='-1'){
+                    this.sendChatRoomMessage(this.stompClient,this.inputMessage)
+                }else {
+                   this.sendPrivateChatMessage(this.stompClient,this.inputMessage,this.receiverId)
+                }
             }
         },
         updated() {
@@ -198,17 +237,38 @@
             },
         },
         watch:{
-            receiverId(){
+            receiverId(newValue,oldValue){
                 /**
                  * vuex设置messages
                  */
+                this.$store.commit('saveMessages',{
+                    receiverId: oldValue,
+                    messages: this.messages
+                })
 
-                // console.log('change')
-                // alert('change')
+                 if(this.$store.state.messagesMap.get(newValue)==undefined){
+                     this.messages = []
+                     /**
+                      * 订阅别人发来的
+                      */
+                     this.subscribePrivateChat(newValue)
+                     /**
+                      * 监听自己发出去的
+                      */
+                     this.subscribePrivateMySideChat(newValue)
+                 }else{
+                     this.messages = this.$store.state.messagesMap.get(newValue)
+                 }
+
+                 console.log(this.stompClient)
+
+                // console.log(this.messages);
             }
         },
         created(){
-            this.subscribe()
+            this.subscribeChatRoom()
+            // this.subscribeChatRoom()
+            // this.subscribeChatRoom()
             window.addEventListener('beforeunload',()=>this.sendLogoutMessage(this.stompClient))
         },
     }

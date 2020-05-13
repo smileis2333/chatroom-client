@@ -5,9 +5,9 @@
                 <i class="el-icon-chat-line-round icon"></i>
                 <span class="description">Chat Room</span>
             </div>
-            <div class="return-room">
+            <div class="return-room" v-if="receiverId!=-1" @click="receiverId=-1">
                 <img src="../assets/return.png" alt="" style="width: 40px">
-                <span style="color: #243b93" @click="receiverId=-1">返回聊天室</span>
+                <span style="color: #243b93">返回聊天室</span>
 
             </div>
             <div style="display: flex;align-items: center">
@@ -34,11 +34,11 @@
                     Private Chats
                 </div>
                 <div style="padding-left: 20px;padding-right: 20px">
-                    <el-input v-model="input" placeholder="Search" class="searchArea"
+                    <el-input v-model="filterChatInput" placeholder="Search" class="searchArea"
                               style="background-color: black!important;"></el-input>
                 </div>
                 <div class="user-list">
-                    <div v-for="(privateChat,index) in privateChats" :key="privateChat.privateChatId">
+                    <div v-for="(privateChat,index) in filterMatch(privateChats)" :key="privateChat.privateChatId">
                         <div class="user" @click="switchChat(privateChat.receiverId)">
                             <el-avatar
                                     :src="privateChat.receiver.avatar"></el-avatar>
@@ -56,15 +56,16 @@
                                             <i class="el-icon-more option-icon"></i>
                                         </span>
                                         <el-dropdown-menu slot="dropdown">
-                                            <el-dropdown-item>Profile</el-dropdown-item>
-                                            <el-dropdown-item @click.native="closeChat(privateChat.receiverId)">Delete</el-dropdown-item>
+                                            <el-dropdown-item @click.native="applyOtherProfile(privateChat.receiverId)">Profile</el-dropdown-item>
+                                            <el-dropdown-item @click.native="closeChat(privateChat.receiverId)">Delete
+                                            </el-dropdown-item>
                                         </el-dropdown-menu>
                                     </el-dropdown>
                                 </div>
                             </div>
                         </div>
 
-                        <el-divider :user-dived="receiverId==privateChat.receiverId?'select':'unselect'" ></el-divider>
+                        <el-divider :user-dived="receiverId==privateChat.receiverId?'select':'unselect'"></el-divider>
                     </div>
                 </div>
             </el-aside>
@@ -133,7 +134,52 @@
                     </div>
                 </div>
             </el-card>
-
+            <el-card class="other-profile" v-if="showOtherProfile">
+                <div class="profile-readonly-op-header">
+                    <span style="color: rgba(255,255,255,.75);font-size: 21px">Profile</span>
+                    <div>
+                        <el-button style="background-color: #DF1B5C;border: none" type="primary"
+                                   icon="el-icon-close" @click="showOtherProfile=false"></el-button>
+                    </div>
+                </div>
+                <div class="profile-meta">
+                    <div class="meta-avatar">
+                        <img :src="otherProfile.avatar"/>
+                    </div>
+                    <div class="meta-username">
+                        {{otherProfile.username}}
+                    </div>
+                    <div class="last-seen">
+                        Last seen: {{otherProfile.lastLogoutTime|fromNow}}
+                    </div>
+                    <div class="about-and-media">
+                            <span class="select-about-or-media about'">About</span>
+                    </div>
+                    <div v-show="selectAboutOrMedia=='about'" class="about-content">
+                        <div class="field">
+                            <div>
+                                {{otherProfile.description}}
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="property-name">
+                                Phone
+                            </div>
+                            <div>
+                                {{otherProfile.phone||'未填'}}
+                            </div>
+                        </div>
+                        <div class="field">
+                            <div class="property-name">
+                                City
+                            </div>
+                            <div>
+                                {{otherProfile.city||'未填'}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </el-card>
             <el-dialog :visible.sync="showEditProfile" width="600px" style="margin: -100px auto;"
                        :before-close="discardEdit">
                 <div slot="title" class="edit-profile-title">
@@ -245,7 +291,8 @@
                 </div>
             </el-dialog>
             <el-main>
-                <chat :receiver-id="receiverId" :chat-type="chatType" v-if="stompClient!=null&&stompClient.connected" @openChat="openChat" :stomp-client="stompClient"/>
+                <chat :receiver-id="receiverId" :chat-type="chatType" v-if="stompClient!=null&&stompClient.connected"
+                      @openChat="openChat" :stomp-client="stompClient"/>
             </el-main>
         </el-container>
     </el-container>
@@ -267,19 +314,21 @@
             chat,
             myUpload
         },
-        mixins: [message,messageStomp],
+        mixins: [message, messageStomp],
         name: "layout",
         data() {
             return {
-                input: '',
+                filterChatInput: '',
                 selectAboutOrMedia: 'about',
                 showProfile: false,
+                showOtherProfile:false,
+                otherProfile:null,
                 showEditProfile: false,
                 showUploadSelector: false,
                 // selectChat: '',
                 uploadAvatarURL: 'http://127.0.0.1:9090/user/avatar',
-                chatType:'chatRoom',
-                receiverId:'-1',
+                chatType: 'chatRoom',
+                receiverId: -1,
                 editWhich: 'basic',
                 updateUserForm: {
                     username: '',
@@ -305,7 +354,7 @@
 
                 url: 'http://localhost:9090/websocket',
                 stompClient: null,
-                privateChats:[]
+                privateChats: []
             }
         },
         methods: {
@@ -384,28 +433,31 @@
                 this.updateUserForm = this.$store.state.user
                 done()
             },
-            openChat(targetUserId){
+            openChat(targetUserId) {
                 console.log('打开私聊');
-                this.sendOpenChatMessage(this.stompClient,targetUserId)
-                setTimeout(()=>this.refreshPrivateChatList(),2000)
+                this.sendOpenChatMessage(this.stompClient, targetUserId)
+                setTimeout(() => this.refreshPrivateChatList(), 2000)
                 /**
                  * 还需要订阅私聊，todo
                  */
             },
-            closeChat(targetUserId){
-                api.deletePrivateChat(targetUserId).then(res=>{
-                    if (res.data.success){
+            closeChat(targetUserId) {
+                api.deletePrivateChat(targetUserId).then(res => {
+                    if (res.data.success) {
                         this.success('删除私聊成功')
+                        /**
+                         * 需要取消订阅 todo
+                         **/
                         this.refreshPrivateChatList()
                     }
                 })
             },
-            refreshPrivateChatList(){
-                api.applyPrivateChat(this.$store.state.user.userId).then(res=>{
+            refreshPrivateChatList() {
+                api.applyPrivateChat(this.$store.state.user.userId).then(res => {
                     this.privateChats = res.data
                 })
             },
-            subscribeOpenChat(){
+            subscribeOpenChat() {
                 this.stompClient.subscribe(`/subscribe/openChat/1`, (message) => {
                     if (message.body) {
                         console.log('有人发起私聊了')
@@ -413,6 +465,17 @@
                     }
                 })
             },
+            filterMatch(pts) {
+                return pts.filter(pt => pt.receiver.username.search(this.filterChatInput) != -1)
+            },
+            applyOtherProfile(otherUserId){
+                api.getOtherUser(otherUserId).then(res=>{
+                    if (res.data.userId){
+                        this.showOtherProfile = true
+                        this.otherProfile = res.data
+                    }
+                })
+            }
         },
 
         created() {
@@ -423,7 +486,6 @@
             this.refreshPrivateChatList()
             this.initUpdateUserForm({...this.$store.state.user})
         },
-
     }
 </script>
 
@@ -587,6 +649,18 @@
         position: absolute;
         width: 350px;
         right: 0px;
+        top: 60px;
+        bottom: 0px;
+        background-color: #2E364A;
+        border: none;
+        z-index: 100;
+        padding-right: 0px;
+    }
+
+    .other-profile{
+        position: absolute;
+        width: 385px;
+        left: 0px;
         top: 60px;
         bottom: 0px;
         background-color: #2E364A;

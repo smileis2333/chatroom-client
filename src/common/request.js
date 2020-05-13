@@ -39,3 +39,7 @@ export function applyPrivateChat(senderId) {
 export function deletePrivateChat(targetUserId) {
     return axios.delete(`/chat/private/other/${targetUserId}`)
 }
+
+export function getOtherUser(userId) {
+    return axios.get(`/user/${userId}`)
+}
