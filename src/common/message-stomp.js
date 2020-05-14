@@ -1,6 +1,9 @@
 export default {
     methods:{
-        sendChatRoomMessage(client,content) {
+        /**
+         * 发聊天室消息
+         */
+        sendChatRoomMessage(client,content,done) {
             if (content != null && content != undefined && content != '') {
                 client.send('/send/chatRoom', {}, JSON.stringify({
                     'content': content,
@@ -10,10 +13,12 @@ export default {
                     'receiverId':-1
                 }))
             }
-
-            this.inputMessage = ''
+            done()
         },
-        sendPrivateChatMessage(client,content,targetUserId) {
+        /**
+         * 发私聊消息
+         */
+        sendPrivateChatMessage(client,content,targetUserId,done) {
             if (content != null && content != undefined && content != '') {
                 client.send('/send/chat', {}, JSON.stringify({
                     'content': content,
@@ -23,30 +28,71 @@ export default {
                     'receiverId': targetUserId
                 }))
             }
-            this.inputMessage = ''
+            done()
         },
+        /**
+         * 发进入聊天室的消息
+         */
         sendLoginMessage(client){
             client.send('/send/chatRoom', {}, JSON.stringify({
                 'user': this.$store.state.user,
                 'event': 'LOGIN'
             }))
-
-            this.inputMessage = ''
         },
+        /**
+         * 发退出聊天室的消息，绑定在窗口关闭的时候
+         */
         sendLogoutMessage(client){
             client.send('/send/chatRoom', {}, JSON.stringify({
                 'user': this.$store.state.user,
                 'event': 'LOGOUT'
             }))
-
-            this.inputMessage = ''
         },
+        /**
+         * 发打开私聊的消息
+         */
         sendOpenChatMessage(client,targetUserId){
             client.send('/send/openChat', {}, JSON.stringify({
                 'user': this.$store.state.user,
                 'targetUserId': targetUserId
             }))
-            this.inputMessage = ''
+        },
+
+        /**
+         * 订阅聊天室消息
+         */
+        subscribeChatRoom(stompClient,done){
+            stompClient.subscribe('/subscribe/chatRoom', (message) => {
+                if (message.body) {
+                    let messageVo = JSON.parse(message.body);
+                    done(messageVo)
+                }
+            })
+            this.sendLoginMessage(stompClient)
+        },
+
+        /**
+         * 订阅他人发过来的私聊
+         */
+        subscribePrivateChat(stompClient,targetUserId,done){
+            stompClient.subscribe(`/subscribe/chat/sender/${targetUserId}/receiver/${this.$store.state.user.userId}`, (message) => {
+                if (message.body) {
+                    let messageVo = JSON.parse(message.body);
+                    done(messageVo)
+                }
+            })
+        },
+
+        /**
+         * 订阅自己发出去的私聊(如果不订阅，自己发出去的收不回来)
+         */
+        subscribePrivateMySideChat(stompClient,targetUserId,done){
+            stompClient.subscribe(`/subscribe/chat/sender/${this.$store.state.user.userId}/receiver/${targetUserId}`, (message) => {
+                if (message.body) {
+                    let messageVo = JSON.parse(message.body);
+                    done(messageVo)
+                }
+            })
         },
     }
 }

@@ -56,7 +56,9 @@
                                             <i class="el-icon-more option-icon"></i>
                                         </span>
                                         <el-dropdown-menu slot="dropdown">
-                                            <el-dropdown-item @click.native="applyOtherProfile(privateChat.receiverId)">Profile</el-dropdown-item>
+                                            <el-dropdown-item @click.native="applyOtherProfile(privateChat.receiverId)">
+                                                Profile
+                                            </el-dropdown-item>
                                             <el-dropdown-item @click.native="closeChat(privateChat.receiverId)">Delete
                                             </el-dropdown-item>
                                         </el-dropdown-menu>
@@ -153,7 +155,7 @@
                         Last seen: {{otherProfile.lastLogoutTime|fromNow}}
                     </div>
                     <div class="about-and-media">
-                            <span class="select-about-or-media about'">About</span>
+                        <span class="select-about-or-media about'">About</span>
                     </div>
                     <div v-show="selectAboutOrMedia=='about'" class="about-content">
                         <div class="field">
@@ -291,8 +293,18 @@
                 </div>
             </el-dialog>
             <el-main>
-                <chat :receiver-id="receiverId" :chat-type="chatType" v-if="stompClient!=null&&stompClient.connected"
-                      @openChat="openChat" :stomp-client="stompClient"/>
+<!--                多个聊天区，分别由多个实例管理，分为两类，一个聊天室区，以及多个私聊区-->
+                <div>
+                    <chat v-show="receiverId==-1" :receiver-id="-1" :chat-type="chatType"
+                          v-if="stompClient!=null&&stompClient.connected" @openChat="openChat"
+                          @applyOtherProfile="applyOtherProfile" :stomp-client="stompClient"/>
+                    <div v-for="privateChat in privateChats" :key="privateChat.receiverId">
+                        <chat v-show="receiverId==privateChat.receiverId" :receiver-id="privateChat.receiverId"
+                              :chat-type="chatType" v-if="stompClient!=null&&stompClient.connected" @openChat="openChat"
+                              @applyOtherProfile="applyOtherProfile" :stomp-client="stompClient"/>
+                    </div>
+                </div>
+
             </el-main>
         </el-container>
     </el-container>
@@ -321,8 +333,8 @@
                 filterChatInput: '',
                 selectAboutOrMedia: 'about',
                 showProfile: false,
-                showOtherProfile:false,
-                otherProfile:null,
+                showOtherProfile: false,
+                otherProfile: null,
                 showEditProfile: false,
                 showUploadSelector: false,
                 // selectChat: '',
@@ -468,9 +480,9 @@
             filterMatch(pts) {
                 return pts.filter(pt => pt.receiver.username.search(this.filterChatInput) != -1)
             },
-            applyOtherProfile(otherUserId){
-                api.getOtherUser(otherUserId).then(res=>{
-                    if (res.data.userId){
+            applyOtherProfile(otherUserId) {
+                api.getOtherUser(otherUserId).then(res => {
+                    if (res.data.userId) {
                         this.showOtherProfile = true
                         this.otherProfile = res.data
                     }
@@ -657,7 +669,7 @@
         padding-right: 0px;
     }
 
-    .other-profile{
+    .other-profile {
         position: absolute;
         width: 385px;
         left: 0px;

@@ -23,12 +23,9 @@ export function updateUser(updateForm) {
     return axios.post(`/user`,updateForm)
 }
 
-export function applyMoreMessage(page,pageSize) {
+export function applyMoreMessage(queryDto) {
     return axios.get(`/message`,{
-        params:{
-            page:page-1,
-            size:pageSize
-        }
+        params: queryDto
     })
 }
 

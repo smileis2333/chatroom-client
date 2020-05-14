@@ -5,7 +5,7 @@
                 已经没有更多消息了
             </div>
             <div v-if="hasMoreMessage" class="has-more-message has-more-message-hover"
-                 @click="applyMoreMessage(page,pageSize)">
+                 @click="applyMoreMessage">
                 <i class="el-icon-pie-chart" style="margin-right: 15px"/>查看更多消息
             </div>
             <div v-for="message in messages" :key="message.messageId" class="message-meta">
@@ -22,7 +22,7 @@
 
                         <el-dropdown-menu slot="dropdown">
                             <el-dropdown-item @click.native="$emit('openChat',message.senderId)">New Chat</el-dropdown-item>
-                            <el-dropdown-item >Profile</el-dropdown-item>
+                            <el-dropdown-item @click.native="$emit('applyOtherProfile',message.senderId)">Profile</el-dropdown-item>
                         </el-dropdown-menu>
                     </el-dropdown>
                     <div class="message">
@@ -136,16 +136,31 @@
             isMyMessage(message) {
                 return message.senderId == this.$store.state.user.userId
             },
-            applyMoreMessage(page, pageSize) {
+            applyMoreMessage() {
                 this.scrollDirection = 'top'
-                api.applyMoreMessage(page, pageSize).then(res => {
+                let queryDto = {
+                    page: this.page-1,
+                    size: this.pageSize,
+                    receiverId: this.receiverId
+                }
+                /**
+                 * 私聊参数
+                 */
+                if(this.receiverId!=-1){
+                    queryDto = {
+                        ...queryDto,
+                        senderId: this.$store.state.user.userId,
+                    }
+                }
+
+                api.applyMoreMessage(queryDto).then(res => {
                     if (res.data.content.length > 0) {
                         if (res.data.totalPages == this.page) {
                             this.hasMoreMessage = false
                         } else {
                             this.page++;
                         }
-                        // res.data.
+
                         this.messages = res.data.content.concat(this.messages)
                     } else {
                         this.hasMoreMessage = false
@@ -168,54 +183,11 @@
                     this.error(`上传文件失败, ${res.message}`)
                 }
             },
-            subscribeChatRoom(){
-                this.stompClient.subscribe('/subscribe/chatRoom', (message) => {
-                    if (message.body) {
-                        console.log('接受聊天室消息')
-                        let messageVo = JSON.parse(message.body);
-                        console.log(messageVo)
-                        if (this.receiverId!=-1){
-                            this.$store.state.messagesMap.get(-1).push(messageVo)
-                        }else {
-                            this.messages.push(messageVo)
-                        }
-                    }
-                })
-                this.sendLoginMessage(this.stompClient)
-            },
-            subscribePrivateChat(targetUserId){
-                this.stompClient.subscribe(`/subscribe/chat/sender/${targetUserId}/receiver/${this.$store.state.user.userId}`, (message) => {
-                    if (message.body) {
-                        console.log('接受私聊消息')
-                        let messageVo = JSON.parse(message.body);
-                        console.log(messageVo)
-
-                        if (this.receiverId!=-targetUserId){
-                            this.$store.state.messagesMap.get(targetUserId).push(messageVo)
-                        }else {
-                            this.messages.push(messageVo)
-                        }
-                    }
-                })
-            },
-            subscribePrivateMySideChat(targetUserId){
-                this.stompClient.subscribe(`/subscribe/chat/sender/${this.$store.state.user.userId}/receiver/${targetUserId}`, (message) => {
-                    if (message.body) {
-                        console.log('接受私聊消息')
-                        let messageVo = JSON.parse(message.body);
-                        if (this.receiverId!=-targetUserId){
-                            this.$store.state.messagesMap.get(targetUserId).push(messageVo)
-                        }else {
-                            this.messages.push(messageVo)
-                        }
-                    }
-                })
-            },
             sendMessage(){
                 if (this.receiverId=='-1'){
-                    this.sendChatRoomMessage(this.stompClient,this.inputMessage)
+                    this.sendChatRoomMessage(this.stompClient,this.inputMessage,()=>{this.inputMessage=''})
                 }else {
-                   this.sendPrivateChatMessage(this.stompClient,this.inputMessage,this.receiverId)
+                   this.sendPrivateChatMessage(this.stompClient,this.inputMessage,this.receiverId,()=>{this.inputMessage=''})
                 }
             }
         },
@@ -238,38 +210,18 @@
         },
         watch:{
             receiverId(newValue,oldValue){
-                /**
-                 * vuex设置messages
-                 */
-                this.$store.commit('saveMessages',{
-                    receiverId: oldValue,
-                    messages: this.messages
-                })
-
-                 if(this.$store.state.messagesMap.get(newValue)==undefined){
-                     this.messages = []
-                     /**
-                      * 订阅别人发来的
-                      */
-                     this.subscribePrivateChat(newValue)
-                     /**
-                      * 监听自己发出去的
-                      */
-                     this.subscribePrivateMySideChat(newValue)
-                 }else{
-                     this.messages = this.$store.state.messagesMap.get(newValue)
-                 }
-
-                 console.log(this.stompClient)
-
-                // console.log(this.messages);
             }
         },
         created(){
-            this.subscribeChatRoom()
-            // this.subscribeChatRoom()
-            // this.subscribeChatRoom()
-            window.addEventListener('beforeunload',()=>this.sendLogoutMessage(this.stompClient))
+            if (this.receiverId==-1){
+                this.subscribeChatRoom(this.stompClient,(messageVo)=>{
+                    this.messages.push(messageVo)
+                })
+                window.addEventListener('beforeunload',()=>this.sendLogoutMessage(this.stompClient))
+            }else{
+                this.subscribePrivateChat(this.stompClient,this.receiverId,(messageVo)=>this.messages.push(messageVo))
+                this.subscribePrivateMySideChat(this.stompClient,this.receiverId,(messageVo)=>this.messages.push(messageVo))
+            }
         },
     }
 </script>

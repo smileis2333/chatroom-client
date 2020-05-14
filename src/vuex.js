@@ -8,7 +8,6 @@ const store = new Vuex.Store({
     state:{
         user: null,
         isLogin: false,
-        messagesMap:new Map()
     },
     mutations:{
         setUser(state, userInfo){
@@ -18,9 +17,6 @@ const store = new Vuex.Store({
         unsetUser(state) {
             state.user = null
             state.isLogin = false
-        },
-        saveMessages(state,payload){
-            state.messagesMap.set(payload.receiverId,payload.messages)
         },
     }
 })
