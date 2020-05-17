@@ -16,5 +16,14 @@ export default {
                 duration:1000
             })
         },
+        confirm(tip,callback){
+            this.$confirm(tip, '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                callback()
+            })
+        }
     }
 }

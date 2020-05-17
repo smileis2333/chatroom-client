@@ -1,12 +1,11 @@
 <template>
     <div id="app">
-<!--        <chatRoom/>-->
         <router-view/>
     </div>
 </template>
 
 <script>
-    import chatRoom from "@/components/chatroom";
+    import chatRoom from "@/components/client/chatroom";
 
     export default {
         name: 'App',

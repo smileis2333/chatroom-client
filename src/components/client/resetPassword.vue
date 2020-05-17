@@ -2,7 +2,7 @@
 
     <div class="reset-password-container">
         <div>
-            <img src="../assets/logo.png" class="favicon"/>
+            <img src="../../assets/logo.png" class="favicon"/>
         </div>
         <div style="font-size: 1.25rem;">
             Reset password
@@ -63,9 +63,9 @@
             resetPassword(resetForm){
                 this.$refs['resetForm'].validate((valid) => {
                     if (valid) {
-                        api.register(resetForm).then(res=>{
+                        api.resetPassword(resetForm).then(res=>{
                             if (res.data.success){
-                                this.success('登录成功')
+                                this.success('处理已接受，需到邮箱进行确认修改')
                                 this.$router.push({path: `/login`})
                             }else {
                                 this.error(res.data.message)

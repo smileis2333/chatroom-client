@@ -40,3 +40,29 @@ export function deletePrivateChat(targetUserId) {
 export function getOtherUser(userId) {
     return axios.get(`/user/${userId}`)
 }
+
+export function resetPassword(resetForm) {
+    return axios.post(`/user/reset-password`,resetForm)
+}
+
+export function getUsers(params) {
+    return axios.get(`/user/users`,{
+        params:params
+    })
+}
+
+export function deleteUser(userId) {
+    return axios.delete(`/user/${userId}`)
+}
+
+export function freezeUser(userId) {
+    return axios.put(`/user/freeze/${userId}`)
+}
+
+export function deleteUsers(userIds) {
+    return axios.delete(`/user/batch`,{
+        params: {
+            userIds:userIds
+        }
+    })
+}

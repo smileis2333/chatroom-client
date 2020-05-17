@@ -2,7 +2,7 @@
 
     <div class="register-container">
         <div>
-            <img src="../assets/logo.png" class="favicon"/>
+            <img src="../../assets/logo.png" class="favicon"/>
         </div>
         <div style="font-size: 1.25rem;">
             Create account

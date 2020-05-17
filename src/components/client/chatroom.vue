@@ -6,7 +6,7 @@
                 <span class="description">Chat Room</span>
             </div>
             <div class="return-room" v-if="receiverId!=-1" @click="receiverId=-1">
-                <img src="../assets/return.png" alt="" style="width: 40px">
+                <img src="../../assets/return.png" alt="" style="width: 40px">
                 <span style="color: #243b93">返回聊天室</span>
 
             </div>
@@ -316,7 +316,7 @@
     import myUpload from 'vue-image-crop-upload';
     import * as api from '@/common/request'
     import message from "@/common/message";
-    import chat from "@/components/chat";
+    import chat from "@/components/client/chat";
     import messageStomp from "@/common/message-stomp";
     import SockJS from 'sockjs-client';
     import Stomp from 'stompjs';
