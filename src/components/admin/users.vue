@@ -26,6 +26,10 @@
             <el-button type="danger" v-show="showBatchDelete" @click="batchDelete">
                 批量删除
             </el-button>
+
+            <el-button @click="exportExcel">
+                导出Excel
+            </el-button>
         </div>
         <el-table
                 :data="users"
@@ -110,6 +114,7 @@
     import * as api from '@/common/request'
     import message from "@/common/message";
     import pagination from "@/components/pagination";
+    import {export_json_to_excel} from "@/vendor/Export2Excel";
 
 
     export default {
@@ -170,8 +175,6 @@
                 this.selectUsers = val
             },
             getList() {
-                console.log(this.getDate());
-
                 let params = {
                     page: this.query.page -1,
                     size: this.query.size,
@@ -214,7 +217,29 @@
                         username: this.userIdOrUsernameValue
                     }
                 }
-            }
+            },
+
+            exportExcel() {
+
+                const tHeader = ['UserID', '用户名', '描述', '状态', '创建日期', '更新日期']
+                const data = this.users.map(user=>{
+                    return [
+                        user.userId,
+                        user.username,
+                        user.description,
+                        user.statusDescription,
+                        user.createTime,
+                        user.updateTime
+                    ]
+                })
+                export_json_to_excel({
+                    header: tHeader,
+                    data,
+                    filename: this.filename,
+                    autoWidth: this.autoWidth,
+                    bookType: this.bookType
+                })
+            },
         },
         created() {
             this.getList()

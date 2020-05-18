@@ -141,7 +141,7 @@
                 let queryDto = {
                     page: this.page-1,
                     size: this.pageSize,
-                    receiverId: this.receiverId
+                    receiverIdOrSenderId: this.receiverId
                 }
                 /**
                  * 私聊参数
@@ -149,7 +149,7 @@
                 if(this.receiverId!=-1){
                     queryDto = {
                         ...queryDto,
-                        senderId: this.$store.state.user.userId,
+                        senderIdOrReceiverId: this.$store.state.user.userId,
                     }
                 }
 

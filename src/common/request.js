@@ -66,3 +66,21 @@ export function deleteUsers(userIds) {
         }
     })
 }
+
+export function adminQueryMessage(queryDto) {
+    return axios.get(`/message/admin`,{
+        params: queryDto
+    })
+}
+
+export function deleteMessages(messageIds) {
+    return axios.delete(`/message/batch`,{
+        params:{
+            messageIds: messageIds
+        }
+    })
+}
+
+export function deleteMessage(messageId) {
+    return axios.delete(`/message/${messageId}`)
+}

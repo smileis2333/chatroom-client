@@ -54,7 +54,7 @@ router.beforeEach((to, from, next) => {
         if (to.path == '/admin/login') {
             next()
         }
-        if (store.state.user.role!='ADMIN'){
+        if (!store.state.isLogin){
             next()
             next('/admin/login')
         }

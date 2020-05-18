@@ -2,7 +2,7 @@
     <div>
         <el-row class="main">
             <el-col :span="4">
-                <el-menu router="true" default-active="/admin/manage/users" class="el-menu-vertical-demo" @open="handleOpen" @close="handleClose"
+                <el-menu :router=true default-active="/admin/manage/users" class="el-menu-vertical-demo" @open="handleOpen" @close="handleClose"
                          text-color="#BFCBBD" background-color="#304156">
                     <el-menu-item index="/admin/manage/users">
                         <i class="el-icon-user"></i>
