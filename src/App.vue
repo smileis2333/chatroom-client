@@ -25,32 +25,32 @@
         background-color: #1a2236;
     }
 
-    .el-divider[user-dived=unselect]{
+    .el-divider[user-dived=unselect] {
         background-color: #424A5E;
     }
 
-    .el-divider[user-dived=select]{
+    .el-divider[user-dived=select] {
         background-color: #26A69A;
     }
 
-    .el-divider[edit-profile]{
+    .el-divider[edit-profile] {
         background-color: #424A5E;
     }
 
-    .el-divider[account]{
-       background-color: #293042;
+    .el-divider[account] {
+        background-color: #293042;
     }
 
-    .el-tabs__nav-wrap::after{
+    .el-tabs__nav-wrap::after {
         background-color: #2E364A;
     }
 
-    .el-dialog__header,.el-dialog__body,.el-dialog__footer{
+    .el-dialog__header, .el-dialog__body, .el-dialog__footer {
         background-color: #2E364A;
     }
 
-    .el-dialog__body{
-        padding-top: 0px!important;
+    .el-dialog__body {
+        padding-top: 0px !important;
     }
 
     .emoji {
@@ -58,5 +58,13 @@
         width: 36px;
     }
 
+    .el-drawer.rtl {
+        background-color: #1A2236;
+        outline: none;
+    }
+
+    .el-drawer__header>:first-child{
+        outline: none;
+    }
 
 </style>

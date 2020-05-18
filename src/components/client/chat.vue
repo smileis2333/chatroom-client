@@ -17,12 +17,15 @@
                 <div v-if="message.contextType!='WELCOME'&&!isMyMessage(message)" class="other-message">
                     <el-dropdown trigger="click">
                                 <span class="el-dropdown-link">
-                                    <el-avatar :title="message.username" :src="message.avatar" class="avatar"></el-avatar>
+                                    <el-avatar :title="message.username" :src="message.avatar"
+                                               class="avatar"></el-avatar>
                                 </span>
 
                         <el-dropdown-menu slot="dropdown">
-                            <el-dropdown-item @click.native="$emit('openChat',message.senderId)">New Chat</el-dropdown-item>
-                            <el-dropdown-item @click.native="$emit('applyOtherProfile',message.senderId)">Profile</el-dropdown-item>
+                            <el-dropdown-item @click.native="$emit('openChat',message.senderId)">New Chat
+                            </el-dropdown-item>
+                            <el-dropdown-item @click.native="$emit('applyOtherProfile',message.senderId)">Profile
+                            </el-dropdown-item>
                         </el-dropdown-menu>
                     </el-dropdown>
                     <div class="message">
@@ -89,6 +92,91 @@
                 <el-button icon="el-icon-s-promotion" class="save-btn" @click="sendMessage"/>
             </div>
         </div>
+        <div class="pop-record-search">
+            <el-button type="primary" icon="el-icon-search" @click="openSearchRecordArea"/>
+        </div>
+        <div>
+            <el-drawer
+                    title="聊天记录"
+                    :visible.sync="showSearchRecordArea"
+                    class="search-record-area"
+                    :direction="'rtl'"
+                    :size="'70%'"
+                    :custom-class="'search-record-area'"
+            >
+                <div style="margin-left: 20px;display: flex;height: 39.6px">
+                    <el-radio-group v-model="searchType" style="margin-right: 30px">
+                        <el-radio-button label="文本"></el-radio-button>
+                        <el-radio-button label="文件"></el-radio-button>
+                    </el-radio-group>
+                    <div style="display: flex;justify-content: flex-start">
+                        <div style="width: 300px">
+                            <el-input @keypress.enter.native="search" placeholder="搜索消息记录" type="text"
+                                      v-model="searchContent" style="display: inline-block"
+                                      prefix-icon="el-icon-search"/>
+                        </div>
+                        <el-button @click="search" style="margin-left: 30px">搜索</el-button>
+                    </div>
+                </div>
+                <div class="search-message-area">
+
+                    <div v-for="message in searchMessages" :key="message.messageId" class="message-meta">
+                        <div v-if="message.contextType=='WELCOME'" class="welcome">
+                            <div class="message">
+                                {{message.content}}
+                            </div>
+                        </div>
+                        <div v-if="message.contextType!='WELCOME'&&!isMyMessage(message)" class="other-message">
+                            <el-dropdown trigger="click">
+                                <span class="el-dropdown-link">
+                                    <el-avatar :title="message.username" :src="message.avatar"
+                                               class="avatar"></el-avatar>
+                                </span>
+
+                                <el-dropdown-menu slot="dropdown">
+                                    <el-dropdown-item @click.native="$emit('openChat',message.senderId)">New Chat
+                                    </el-dropdown-item>
+                                    <el-dropdown-item @click.native="$emit('applyOtherProfile',message.senderId)">
+                                        Profile
+                                    </el-dropdown-item>
+                                </el-dropdown-menu>
+                            </el-dropdown>
+                            <div class="message">
+                                <div class="content">
+                                    <span v-if="message.contextType=='TEXT'">
+                                    {{message.content}}
+                                    </span>
+                                    <img v-if="message.contextType=='RESOURCE'" :src="message.content"
+                                         class="message-image" alt="">
+                                </div>
+                                <div class="post-time">
+                                    {{message.createTime|formatDate('hh:mm a')}}
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="message.contextType!='WELCOME'&&isMyMessage(message)" class="mine-message">
+                            <div class="message">
+                                <div class="content">
+                                    <span v-if="message.contextType=='TEXT'">
+                                    {{message.content}}
+                                    </span>
+                                    <img v-if="message.contextType=='RESOURCE'" :src="message.content"
+                                         class="message-image" alt="图片">
+                                </div>
+                                <div class="post-time">
+                                    {{message.createTime|formatDate('hh:mm a')}}
+                                </div>
+                            </div>
+                            <el-avatar :src="message.avatar" class="avatar"></el-avatar>
+                        </div>
+                    </div>
+                </div>
+                <div class="pagination">
+                    <pagination v-show="searchParams.total>0" :total="searchParams.total" :page.sync="searchParams.page"
+                                :limit.sync="searchParams.size" @pagination="getList"/>
+                </div>
+            </el-drawer>
+        </div>
     </div>
 </template>
 
@@ -101,23 +189,33 @@
     import EmojiGroups from '@kevinfaguiar/vue-twemoji-picker/emoji-data/emoji-groups.json';
     import messageStomp from "@/common/message-stomp";
     import message from "@/common/message";
+    import pagination from '@/components/pagination'
 
     export default {
         name: "chat",
-        components:{TwemojiPicker},
-        mixins:[messageStomp],
-        props:['stompClient','chatType','receiverId'],
-        data(){
-          return {
-              messages: [],
-              inputMessage: '',
-              hasMoreMessage: true,
-              scrollDirection: 'bottom',
-              page: 1,
-              pageSize: 10,
-          }
+        components: {TwemojiPicker, pagination},
+        mixins: [messageStomp],
+        props: ['stompClient', 'chatType', 'receiverId'],
+        data() {
+            return {
+                messages: [],
+                inputMessage: '',
+                hasMoreMessage: true,
+                scrollDirection: 'bottom',
+                page: 1,
+                pageSize: 10,
+                showSearchRecordArea: false,
+                searchType: '文本',
+                searchContent: '',
+                searchParams: {
+                    total: 0,
+                    page: 1,
+                    size: 10
+                },
+                searchMessages: []
+            }
         },
-        methods:{
+        methods: {
             changeScrollDirection(event) {
 
                 let obj = this.$el.querySelector("#message-list");
@@ -136,17 +234,42 @@
             isMyMessage(message) {
                 return message.senderId == this.$store.state.user.userId
             },
+            getList() {
+                console.log(this.otherSearchParams);
+                let params = {
+                    page: this.searchParams.page - 1,
+                    size: this.searchParams.size,
+                    receiverIdOrSenderId: this.receiverId,
+                    contextType: this.searchType == '文本' ? 'TEXT' : 'RESOURCE',
+                    ...this.otherSearchParams
+                }
+
+                /**
+                 * 私聊要两个人的范围
+                 **/
+                if (this.receiverId != -1) {
+                    params = {
+                        ...params,
+                        senderIdOrReceiverId: this.$store.state.user.userId,
+                    }
+                }
+
+                api.applyMoreMessage(params).then(res => {
+                    this.searchMessages = res.data.content
+                    this.searchParams.total = res.data.totalElements
+                })
+            },
             applyMoreMessage() {
                 this.scrollDirection = 'top'
                 let queryDto = {
-                    page: this.page-1,
+                    page: this.page - 1,
                     size: this.pageSize,
                     receiverIdOrSenderId: this.receiverId
                 }
                 /**
                  * 私聊参数
                  */
-                if(this.receiverId!=-1){
+                if (this.receiverId != -1) {
                     queryDto = {
                         ...queryDto,
                         senderIdOrReceiverId: this.$store.state.user.userId,
@@ -183,12 +306,24 @@
                     this.error(`上传文件失败, ${res.message}`)
                 }
             },
-            sendMessage(){
-                if (this.receiverId=='-1'){
-                    this.sendChatRoomMessage(this.stompClient,this.inputMessage,()=>{this.inputMessage=''})
-                }else {
-                   this.sendPrivateChatMessage(this.stompClient,this.inputMessage,this.receiverId,()=>{this.inputMessage=''})
+            sendMessage() {
+                if (this.receiverId == '-1') {
+                    this.sendChatRoomMessage(this.stompClient, this.inputMessage, () => {
+                        this.inputMessage = ''
+                    })
+                } else {
+                    this.sendPrivateChatMessage(this.stompClient, this.inputMessage, this.receiverId, () => {
+                        this.inputMessage = ''
+                    })
                 }
+            },
+            openSearchRecordArea() {
+                // alert(this.receiverId)
+                // this.drawer = trueothis.
+                this.showSearchRecordArea = true
+            },
+            search() {
+                this.getList();
             }
         },
         updated() {
@@ -207,21 +342,60 @@
             emojiGroups() {
                 return EmojiGroups;
             },
-        },
-        watch:{
-            receiverId(newValue,oldValue){
+            otherSearchParams() {
+                let tmp = this.searchContent
+
+
+                let result = {
+                    senderId: null,
+                    receiverId: null,
+                    senderName:null,
+                    receiverName: null,
+                }
+
+                let matchResult = null;
+                matchResult = /senderId:(\d+)/i.exec(tmp);
+                if (matchResult!=null){
+                    result.senderId = matchResult[1]
+                    tmp = tmp.replace(/senderId:(\d+)/i, "");
+                }
+
+                matchResult = /receiverId:(\d+)/i.exec(tmp);
+                if (matchResult!=null){
+                    result.receiverId= matchResult[1]
+                    tmp = tmp.replace(/receiverId:(\d+)/i, "");
+                }
+
+                matchResult = /senderName:(\w+)/i.exec(tmp);
+                if (matchResult!=null){
+                    result.senderName = matchResult[1]
+                    tmp = tmp.replace(/senderName:(\w+)/i, "");
+                }
+
+                matchResult = /receiverName:(\w+)/i.exec(tmp);
+                if (matchResult!=null){
+                    result.receiverName = matchResult[1]
+                    tmp = tmp.replace(/receiverName:(\w+)/i, "");
+                }
+
+                return result
             }
         },
-        created(){
-            if (this.receiverId==-1){
-                this.subscribeChatRoom(this.stompClient,(messageVo)=>{
+        watch: {
+            receiverId(newValue, oldValue) {
+            }
+        },
+        created() {
+            if (this.receiverId == -1) {
+                this.subscribeChatRoom(this.stompClient, (messageVo) => {
                     this.messages.push(messageVo)
                 })
-                window.addEventListener('beforeunload',()=>this.sendLogoutMessage(this.stompClient))
-            }else{
-                this.subscribePrivateChat(this.stompClient,this.receiverId,(messageVo)=>this.messages.push(messageVo))
-                this.subscribePrivateMySideChat(this.stompClient,this.receiverId,(messageVo)=>this.messages.push(messageVo))
+                window.addEventListener('beforeunload', () => this.sendLogoutMessage(this.stompClient))
+            } else {
+                this.subscribePrivateChat(this.stompClient, this.receiverId, (messageVo) => this.messages.push(messageVo))
+                this.subscribePrivateMySideChat(this.stompClient, this.receiverId, (messageVo) => this.messages.push(messageVo))
             }
+            this.getList()
         },
     }
 </script>
@@ -238,6 +412,7 @@
     .message-area::-webkit-scrollbar {
         background-color: #1a2236;
     }
+
     .message-area::-webkit-scrollbar-thumb {
         background-color: rgba(66, 66, 66, 0.2);
     }
@@ -338,7 +513,7 @@
         font-size: 14px;
     }
 
-    .chat-container{
+    .chat-container {
         position: absolute;
         left: 385px;
         bottom: 0px;
@@ -348,4 +523,35 @@
         padding-left: 0px;
         padding-right: 0px;
     }
+
+    .pop-record-search {
+        position: absolute;
+        top: 200px;
+        right: 0px;
+    }
+
+    .search-message-area {
+        overflow-y: auto;
+        position: absolute;
+        bottom: 70px;
+        top: 150px;
+        right: 0px;
+        left: 0px;
+        margin-left: 20px;
+        margin-right: 20px;
+    }
+
+    .search-message-area::-webkit-scrollbar {
+        display: none;
+    }
+
+    .pagination {
+        position: absolute;
+        bottom: 0px;
+    }
+
+    .pagination-container {
+        background-color: #1A2236;
+    }
+
 </style>
