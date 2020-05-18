@@ -30,11 +30,19 @@
                     </el-dropdown>
                     <div class="message">
                         <div class="content">
-                                    <span v-if="message.contextType=='TEXT'">
-                                    {{message.content}}
-                                    </span>
-                            <img v-if="message.contextType=='RESOURCE'" :src="message.content"
-                                 class="message-image" alt="">
+                            <span v-if="message.contextType=='TEXT'">{{message.content}}</span>
+                            <img v-else-if="message.contextType=='RESOURCE'&&message.resourceType=='IMAGE'"
+                                 :src="message.content" class="message-image" alt="图片">
+                            <div v-else style="display: flex;justify-content: flex-start;">
+                                <i class="el-icon-link" style="margin-top: 0px;font-size: 25px;margin-right: 10px"/>
+                                <div>
+                                    <div>
+                                        {{message.fileName}}
+                                    </div>
+                                    <a :href="message.content" target="_blank" class="download-btn">Download</a>
+                                </div>
+                            </div>
+
                         </div>
                         <div class="post-time">
                             {{message.createTime|formatDate('hh:mm a')}}
@@ -47,8 +55,19 @@
                                     <span v-if="message.contextType=='TEXT'">
                                     {{message.content}}
                                     </span>
-                            <img v-if="message.contextType=='RESOURCE'" :src="message.content"
+                            <img v-else-if="message.contextType=='RESOURCE'&&message.resourceType=='IMAGE'"
+                                 :src="message.content"
                                  class="message-image" alt="图片">
+
+                            <div v-else style="display: flex;justify-content: flex-start;">
+                                <i class="el-icon-link" style="margin-top: 0px;font-size: 25px;margin-right: 10px"/>
+                                <div>
+                                    <div>
+                                        {{message.fileName}}
+                                    </div>
+                                    <a :href="message.content" target="_blank" class="download-btn">Download</a>
+                                </div>
+                            </div>
                         </div>
                         <div class="post-time">
                             {{message.createTime|formatDate('hh:mm a')}}
@@ -298,9 +317,12 @@
             handleSuccess(res, file, fileList) {
                 if (res.success) {
                     this.stompClient.send('/send/chatRoom', {}, JSON.stringify({
-                        'content': res.message,
+                        'content': res.filePath,
                         'user': this.$store.state.user,
-                        'ContextType': 'RESOURCE'
+                        'ContextType': 'RESOURCE',
+                        'event': 'SENT_MESSAGE',
+                        'resourceType': res.resourceType,
+                        'fileName': res.fileName
                     }))
                 } else {
                     this.error(`上传文件失败, ${res.message}`)
@@ -349,31 +371,31 @@
                 let result = {
                     senderId: null,
                     receiverId: null,
-                    senderName:null,
+                    senderName: null,
                     receiverName: null,
                 }
 
                 let matchResult = null;
                 matchResult = /senderId:(\d+)/i.exec(tmp);
-                if (matchResult!=null){
+                if (matchResult != null) {
                     result.senderId = matchResult[1]
                     tmp = tmp.replace(/senderId:(\d+)/i, "");
                 }
 
                 matchResult = /receiverId:(\d+)/i.exec(tmp);
-                if (matchResult!=null){
-                    result.receiverId= matchResult[1]
+                if (matchResult != null) {
+                    result.receiverId = matchResult[1]
                     tmp = tmp.replace(/receiverId:(\d+)/i, "");
                 }
 
                 matchResult = /senderName:(\w+)/i.exec(tmp);
-                if (matchResult!=null){
+                if (matchResult != null) {
                     result.senderName = matchResult[1]
                     tmp = tmp.replace(/senderName:(\w+)/i, "");
                 }
 
                 matchResult = /receiverName:(\w+)/i.exec(tmp);
-                if (matchResult!=null){
+                if (matchResult != null) {
                     result.receiverName = matchResult[1]
                     tmp = tmp.replace(/receiverName:(\w+)/i, "");
                 }
@@ -552,6 +574,15 @@
 
     .pagination-container {
         background-color: #1A2236;
+    }
+
+    .download-btn {
+        color: #26a69a;
+        text-decoration: none;
+    }
+
+    .download-btn:hover{
+        color: #088874;
     }
 
 </style>

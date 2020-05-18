@@ -84,3 +84,9 @@ export function deleteMessages(messageIds) {
 export function deleteMessage(messageId) {
     return axios.delete(`/message/${messageId}`)
 }
+
+export function getRecentFiles(params) {
+    return axios.get(`/file/recent`,{
+        params:params
+    })
+}

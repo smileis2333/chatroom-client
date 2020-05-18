@@ -127,9 +127,11 @@
                                 Recent Files
                             </div>
                             <div class="file-list">
-                                <div class="file" v-for="i in 4" :key="i">
-                                    <i class="el-icon-files" style="margin-right: 15px"/>
-                                    <span class="filename">report4221.pdf</span>
+                                <div class="file" v-for="file in recentFiles" :key="file.messageId">
+                                    <div style="display: flex;align-items: flex-start">
+                                        <i class="el-icon-link" style="margin-right: 15px;margin-top: 3px"/>
+                                        <a class="filename" :href="file.content" target="_blank">{{file.fileName}}</a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -366,7 +368,8 @@
 
                 url: 'http://localhost:9090/websocket',
                 stompClient: null,
-                privateChats: []
+                privateChats: [],
+                recentFiles:[],
             }
         },
         methods: {
@@ -488,6 +491,7 @@
                     }
                 })
             }
+
         },
 
         created() {
@@ -498,6 +502,21 @@
             this.refreshPrivateChatList()
             this.initUpdateUserForm({...this.$store.state.user})
         },
+        watch:{
+            selectAboutOrMedia(newValue,oldValue){
+                if (newValue=='media'){
+                    let params = {
+                        page: 0,
+                        size: 4
+                    }
+                    api.getRecentFiles(params).then(res=>{
+                        this.recentFiles = res.data.content
+                    })
+                }else if (newValue=='about'){
+
+                }
+            }
+        }
     }
 </script>
 
@@ -626,29 +645,6 @@
         flex-direction: column;
         align-items: flex-end;
     }
-
-    /*备用，消息记录数，可能废弃*/
-    /*.new-message-count {*/
-    /*    font-weight: 400;*/
-    /*    font-family: Inter, sans-serif;*/
-    /*    -webkit-box-direction: normal;*/
-    /*    cursor: pointer;*/
-    /*    box-sizing: border-box;*/
-    /*    width: 25px;*/
-    /*    height: 25px;*/
-    /*    display: flex;*/
-    /*    -webkit-box-align: center;*/
-    /*    align-items: center;*/
-    /*    -webkit-box-pack: center;*/
-    /*    justify-content: center;*/
-    /*    line-height: 0;*/
-    /*    font-size: 13px;*/
-    /*    height: 23px;*/
-    /*    background-color: #26a69a;*/
-    /*    color: #fff;*/
-    /*    border-radius: 50%;*/
-    /*    margin-left: auto;*/
-    /*}*/
 
     .time {
         color: #26a69a;
@@ -781,6 +777,7 @@
 
     .filename {
         color: #2B9A9A;
+        text-decoration: none;
     }
 
     .filename:hover {
