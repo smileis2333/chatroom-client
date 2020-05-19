@@ -62,20 +62,19 @@ export default {
          * 订阅聊天室消息
          */
         subscribeChatRoom(stompClient,done){
-            stompClient.subscribe('/subscribe/chatRoom', (message) => {
+            return stompClient.subscribe('/subscribe/chatRoom', (message) => {
                 if (message.body) {
                     let messageVo = JSON.parse(message.body);
                     done(messageVo)
                 }
             })
-            this.sendLoginMessage(stompClient)
         },
 
         /**
          * 订阅他人发过来的私聊
          */
         subscribePrivateChat(stompClient,targetUserId,done){
-            stompClient.subscribe(`/subscribe/chat/sender/${targetUserId}/receiver/${this.$store.state.user.userId}`, (message) => {
+            return stompClient.subscribe(`/subscribe/chat/sender/${targetUserId}/receiver/${this.$store.state.user.userId}`, (message) => {
                 if (message.body) {
                     let messageVo = JSON.parse(message.body);
                     done(messageVo)
@@ -87,7 +86,7 @@ export default {
          * 订阅自己发出去的私聊(如果不订阅，自己发出去的收不回来)
          */
         subscribePrivateMySideChat(stompClient,targetUserId,done){
-            stompClient.subscribe(`/subscribe/chat/sender/${this.$store.state.user.userId}/receiver/${targetUserId}`, (message) => {
+            return stompClient.subscribe(`/subscribe/chat/sender/${this.$store.state.user.userId}/receiver/${targetUserId}`, (message) => {
                 if (message.body) {
                     let messageVo = JSON.parse(message.body);
                     done(messageVo)

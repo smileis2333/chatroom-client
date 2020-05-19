@@ -74,7 +74,14 @@
                         api.login(loginForm).then(res=>{
                             if (res.data.userId!=null){
                                 this.$store.commit('setUser',res.data)
-                                this.$router.push({path:`/chat`})
+                                this.$router.push(
+                                    {
+                                        name:`chatRoom`,
+                                        params:{
+                                            username: this.loginForm.username,
+                                            password: this.loginForm.password
+                                        }
+                                    })
                             }else {
                                 this.error(res.data.message)
                             }

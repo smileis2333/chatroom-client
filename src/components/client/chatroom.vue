@@ -38,7 +38,7 @@
                               style="background-color: black!important;"></el-input>
                 </div>
                 <div class="user-list">
-                    <div v-for="(privateChat,index) in filterMatch(privateChats)" :key="privateChat.privateChatId">
+                    <div v-for="(privateChat,index) in filterMatch(privateChats)" :key="privateChat.privateChatId" >
                         <div class="user" @click="switchChat(privateChat.receiverId)">
                             <el-avatar
                                     :src="privateChat.receiver.avatar"></el-avatar>
@@ -159,7 +159,7 @@
                     <div class="about-and-media">
                         <span class="select-about-or-media about'">About</span>
                     </div>
-                    <div v-show="selectAboutOrMedia=='about'" class="about-content">
+                    <div class="about-content">
                         <div class="field">
                             <div>
                                 {{otherProfile.description}}
@@ -301,7 +301,7 @@
                           v-if="stompClient!=null&&stompClient.connected" @openChat="openChat"
                           @applyOtherProfile="applyOtherProfile" :stomp-client="stompClient"/>
                     <div v-for="privateChat in privateChats" :key="privateChat.receiverId">
-                        <chat v-show="receiverId==privateChat.receiverId" :receiver-id="privateChat.receiverId"
+                        <chat v-show="receiverId==privateChat.receiverId" :receiver-id="privateChat.receiverId" :ref="`pt_${privateChat.receiverId}`"
                               :chat-type="chatType" v-if="stompClient!=null&&stompClient.connected" @openChat="openChat"
                               @applyOtherProfile="applyOtherProfile" :stomp-client="stompClient"/>
                     </div>
@@ -377,8 +377,8 @@
                 let sockJS = new SockJS(this.url);
                 this.stompClient = Stomp.over(sockJS);
 
-                this.stompClient.connect({}, () => {
-                    console.log('stomp  连接成功')
+                let headers = {username:this.$route.params.username,password:this.$route.params.password}
+                this.stompClient.connect(headers, () => {
                     this.subscribeOpenChat()
                 })
             },
@@ -426,7 +426,6 @@
                     return callback();
                 } else {
                     const reg = /^1[3|4|5|7|8][0-9]\d{8}$/
-                    console.log(reg.test(value));
                     if (reg.test(value)) {
                         callback();
                     } else {
@@ -449,7 +448,6 @@
                 done()
             },
             openChat(targetUserId) {
-                console.log('打开私聊');
                 this.sendOpenChatMessage(this.stompClient, targetUserId)
                 setTimeout(() => this.refreshPrivateChatList(), 2000)
                 /**
@@ -457,13 +455,16 @@
                  */
             },
             closeChat(targetUserId) {
+
                 api.deletePrivateChat(targetUserId).then(res => {
                     if (res.data.success) {
                         this.success('删除私聊成功')
                         /**
                          * 需要取消订阅 todo
                          **/
-                        this.refreshPrivateChatList()
+                        this.$refs[`pt_${targetUserId}`][0].unsubscribe(()=>this.refreshPrivateChatList())
+                        this.receiverId = -1
+                        // setTimeout(()=>console.log(this.stompClient),3000)
                     }
                 })
             },
@@ -475,7 +476,6 @@
             subscribeOpenChat() {
                 this.stompClient.subscribe(`/subscribe/openChat/1`, (message) => {
                     if (message.body) {
-                        console.log('有人发起私聊了')
                         this.refreshPrivateChatList()
                     }
                 })

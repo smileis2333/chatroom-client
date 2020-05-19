@@ -138,57 +138,74 @@
                     </div>
                 </div>
                 <div class="search-message-area">
-
                     <div v-for="message in searchMessages" :key="message.messageId" class="message-meta">
-                        <div v-if="message.contextType=='WELCOME'" class="welcome">
-                            <div class="message">
-                                {{message.content}}
-                            </div>
-                        </div>
-                        <div v-if="message.contextType!='WELCOME'&&!isMyMessage(message)" class="other-message">
-                            <el-dropdown trigger="click">
+                <div v-if="message.contextType=='WELCOME'" class="welcome">
+                    <div class="message">
+                        {{message.content}}
+                    </div>
+                </div>
+                <div v-if="message.contextType!='WELCOME'&&!isMyMessage(message)" class="other-message">
+                    <el-dropdown trigger="click">
                                 <span class="el-dropdown-link">
                                     <el-avatar :title="message.username" :src="message.avatar"
                                                class="avatar"></el-avatar>
                                 </span>
 
-                                <el-dropdown-menu slot="dropdown">
-                                    <el-dropdown-item @click.native="$emit('openChat',message.senderId)">New Chat
-                                    </el-dropdown-item>
-                                    <el-dropdown-item @click.native="$emit('applyOtherProfile',message.senderId)">
-                                        Profile
-                                    </el-dropdown-item>
-                                </el-dropdown-menu>
-                            </el-dropdown>
-                            <div class="message">
-                                <div class="content">
-                                    <span v-if="message.contextType=='TEXT'">
-                                    {{message.content}}
-                                    </span>
-                                    <img v-if="message.contextType=='RESOURCE'" :src="message.content"
-                                         class="message-image" alt="">
-                                </div>
-                                <div class="post-time">
-                                    {{message.createTime|formatDate('hh:mm a')}}
+                        <el-dropdown-menu slot="dropdown">
+                            <el-dropdown-item @click.native="$emit('openChat',message.senderId)">New Chat
+                            </el-dropdown-item>
+                            <el-dropdown-item @click.native="$emit('applyOtherProfile',message.senderId)">Profile
+                            </el-dropdown-item>
+                        </el-dropdown-menu>
+                    </el-dropdown>
+                    <div class="message">
+                        <div class="content">
+                            <span v-if="message.contextType=='TEXT'">{{message.content}}</span>
+                            <img v-else-if="message.contextType=='RESOURCE'&&message.resourceType=='IMAGE'"
+                                 :src="message.content" class="message-image" alt="图片">
+                            <div v-else style="display: flex;justify-content: flex-start;">
+                                <i class="el-icon-link" style="margin-top: 0px;font-size: 25px;margin-right: 10px"/>
+                                <div>
+                                    <div>
+                                        {{message.fileName}}
+                                    </div>
+                                    <a :href="message.content" target="_blank" class="download-btn">Download</a>
                                 </div>
                             </div>
+
                         </div>
-                        <div v-if="message.contextType!='WELCOME'&&isMyMessage(message)" class="mine-message">
-                            <div class="message">
-                                <div class="content">
-                                    <span v-if="message.contextType=='TEXT'">
-                                    {{message.content}}
-                                    </span>
-                                    <img v-if="message.contextType=='RESOURCE'" :src="message.content"
-                                         class="message-image" alt="图片">
-                                </div>
-                                <div class="post-time">
-                                    {{message.createTime|formatDate('hh:mm a')}}
-                                </div>
-                            </div>
-                            <el-avatar :src="message.avatar" class="avatar"></el-avatar>
+                        <div class="post-time">
+                            {{message.createTime|formatDate('hh:mm a')}}
                         </div>
                     </div>
+                </div>
+                <div v-if="message.contextType!='WELCOME'&&isMyMessage(message)" class="mine-message">
+                    <div class="message">
+                        <div class="content">
+                                    <span v-if="message.contextType=='TEXT'">
+                                    {{message.content}}
+                                    </span>
+                            <img v-else-if="message.contextType=='RESOURCE'&&message.resourceType=='IMAGE'"
+                                 :src="message.content"
+                                 class="message-image" alt="图片">
+
+                            <div v-else style="display: flex;justify-content: flex-start;">
+                                <i class="el-icon-link" style="margin-top: 0px;font-size: 25px;margin-right: 10px"/>
+                                <div>
+                                    <div>
+                                        {{message.fileName}}
+                                    </div>
+                                    <a :href="message.content" target="_blank" class="download-btn">Download</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="post-time">
+                            {{message.createTime|formatDate('hh:mm a')}}
+                        </div>
+                    </div>
+                    <el-avatar :src="message.avatar" class="avatar"></el-avatar>
+                </div>
+            </div>
                 </div>
                 <div class="pagination">
                     <pagination v-show="searchParams.total>0" :total="searchParams.total" :page.sync="searchParams.page"
@@ -214,7 +231,7 @@
         name: "chat",
         components: {TwemojiPicker, pagination},
         mixins: [messageStomp],
-        props: ['stompClient', 'chatType', 'receiverId'],
+        props: ['stompClient', 'chatType', 'receiverId','valid'],
         data() {
             return {
                 messages: [],
@@ -224,14 +241,16 @@
                 page: 1,
                 pageSize: 10,
                 showSearchRecordArea: false,
-                searchType: '文本',
+                searchType: null,
                 searchContent: '',
                 searchParams: {
                     total: 0,
                     page: 1,
                     size: 10
                 },
-                searchMessages: []
+                searchMessages: [],
+                privateChatMySideSubscribe:null,
+                privateChatOtherSideSubscribe:null,
             }
         },
         methods: {
@@ -254,12 +273,11 @@
                 return message.senderId == this.$store.state.user.userId
             },
             getList() {
-                console.log(this.otherSearchParams);
                 let params = {
                     page: this.searchParams.page - 1,
                     size: this.searchParams.size,
                     receiverIdOrSenderId: this.receiverId,
-                    contextType: this.searchType == '文本' ? 'TEXT' : 'RESOURCE',
+                    contextType: this.searchType == '文本' ? 'TEXT' : this.searchType=='文件'?'RESOURCE':null,
                     ...this.otherSearchParams
                 }
 
@@ -346,6 +364,27 @@
             },
             search() {
                 this.getList();
+            },
+            subscribe(){
+                if (this.receiverId == -1) {
+                    this.subscribeChatRoom(this.stompClient, (messageVo) => {
+                        this.messages.push(messageVo)
+                    })
+                    this.sendLoginMessage(this.stompClient)
+                    window.addEventListener('beforeunload', () => this.sendLogoutMessage(this.stompClient))
+                } else {
+                    this.privateChatOtherSideSubscribe =  this.subscribePrivateChat(this.stompClient, this.receiverId, (messageVo) => this.messages.push(messageVo))
+                    this.privateChatMySideSubscribe = this.subscribePrivateMySideChat(this.stompClient, this.receiverId, (messageVo) => this.messages.push(messageVo))
+                }
+            },
+            unsubscribe(callback){
+                if (this.receiverId == -1) {
+                    // nothing need to do
+                }else{
+                    this.privateChatOtherSideSubscribe.unsubscribe()
+                    this.privateChatMySideSubscribe.unsubscribe()
+                    callback()
+                }
             }
         },
         updated() {
@@ -373,6 +412,8 @@
                     receiverId: null,
                     senderName: null,
                     receiverName: null,
+                    contents:null,
+                    fileNames:null
                 }
 
                 let matchResult = null;
@@ -400,6 +441,14 @@
                     tmp = tmp.replace(/receiverName:(\w+)/i, "");
                 }
 
+                matchResult = tmp.match(/([^\s])+/ig)
+                if (matchResult != null) {
+                    if (this.searchType=='文件'){
+                        result.fileNames = matchResult.join(',')
+                    }else{
+                        result.contents = matchResult.join(',')
+                    }
+                }
                 return result
             }
         },
@@ -408,15 +457,7 @@
             }
         },
         created() {
-            if (this.receiverId == -1) {
-                this.subscribeChatRoom(this.stompClient, (messageVo) => {
-                    this.messages.push(messageVo)
-                })
-                window.addEventListener('beforeunload', () => this.sendLogoutMessage(this.stompClient))
-            } else {
-                this.subscribePrivateChat(this.stompClient, this.receiverId, (messageVo) => this.messages.push(messageVo))
-                this.subscribePrivateMySideChat(this.stompClient, this.receiverId, (messageVo) => this.messages.push(messageVo))
-            }
+            this.subscribe()
             this.getList()
         },
     }
@@ -550,6 +591,11 @@
         position: absolute;
         top: 200px;
         right: 0px;
+    }
+
+
+    .pop-record-search:hover {
+        /*right: 0px;*/
     }
 
     .search-message-area {

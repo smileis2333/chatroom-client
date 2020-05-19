@@ -26,7 +26,7 @@ const router = new VueRouter({
             path: '/reset_password', component: resetPassword
         },
         {
-            path: '/chat', component: chatroom,
+            path: '/chat', component: chatroom, name:'chatRoom',
         },
         {
             path: '/admin/login', component: admin_login
